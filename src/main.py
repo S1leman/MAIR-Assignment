@@ -1,11 +1,11 @@
-def read_data():
+from sklearn.model_selection import train_test_split
+
+def read_data(path):
     duplicates = set()
     dialogue_act = []
     utterance = []
-    list = []
-
-    with open('data/dialog_acts.dat', 'r') as f:
-        lines = f.readlines()
+    with open(path, 'r') as file:
+        lines = file.readlines()
         for line in lines:
             data = line.strip().lower().split(' ', 1)
             act_utterance_pair = (data[0], data[1])
@@ -16,15 +16,16 @@ def read_data():
                 dialogue_act.append(data[0])
                 utterance.append(data[1])
 
-    return utterance, dialogue_act, duplicates, list
+    return dialogue_act, utterance
 
-    #print(regels)
-    #print(dialogue_act)
-    #print(utterance)
 
-#def majority_system(): 
+
+def baseline_model1(test_data, majority_label):
+    return [majority_label] * len(test_data)
+
 
 def rulebased_system(utterances):
+    """ Function that defines the rule-based system"""
     rules = {'hi': 'hello'}
     majority_class = "inform"
 
@@ -38,14 +39,21 @@ def rulebased_system(utterances):
         predictions.append(prediction)
     return predictions
 
+def main(): 
+    path = "data/dialog_acts.dat"
+    dialogue_act, utterance = read_data(path)
+    print(dialogue_act)
+    print(utterance)
 
-x ,y ,set, lijst = read_data()
-print(len(x))
-print(len(y))
-print(len(set))
+    train_acts, test_acts, train_utterances, test_utterances = train_test_split(
+        dialogue_act, utterance, test_size=0.15
+    )
 
-if set.issubset(lijst):
-    print("Alle elementen van de set zitten in de lijst")
-else:
-    print("Niet alles zit in de lijst")
+    predictions = baseline_model1(test_acts, "inform") # given: "inform" -> the majority label
+
+
+
+if __name__ == '__main__':
+    main()
+
 
