@@ -50,6 +50,8 @@ def split_and_save_dataset(dialogue_act, utterance, train_path, test_path, test_
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+
 def decision_tree(train_acts, test_acts, train_utterances, test_utterances): 
     # convert text to Bag of Words
     vectorizer = CountVectorizer(ngram_range=(1,2)) #not really necessary to use bigrams here
@@ -60,6 +62,15 @@ def decision_tree(train_acts, test_acts, train_utterances, test_utterances):
     y_pred = clf.predict(X_test)
     return y_pred
 
+def logistic_regression(train_acts, test_acts, train_utterances, test_utterances): 
+    # convert text to Bag of Words
+    vectorizer = CountVectorizer(ngram_range=(1,2)) #not really necessary to use bigrams here
+    X_train = vectorizer.fit_transform(train_utterances)
+    X_test = vectorizer.transform(test_utterances)  # <- transform only, don’t fit!
+
+    clf = LogisticRegression(random_state=42).fit(X_train, train_acts)
+    y_pred = clf.predict(X_test)
+    return y_pred
 
 def evaluate(y_true, y_pred,  name1="Model", name2="Dataset"):
     acc = accuracy_score(y_true, y_pred)
@@ -93,9 +104,13 @@ def main():
     decisiontree_predictions_dedup = decision_tree(train_acts_dedup, test_acts_dedup, train_utterances_dedup, test_utterances_dedup)
     decisiontree_predictions_dup = decision_tree(train_acts_dup, test_acts_dup, train_utterances_dup, test_utterances_dup)
 
+    logisticregression_predictions_dedup = logistic_regression(train_acts_dedup, test_acts_dedup, train_utterances_dedup, test_utterances_dedup)
+    logisticregression_predictions_dup = logistic_regression(train_acts_dup, test_acts_dup, train_utterances_dup, test_utterances_dup)
     # Evaluate
     evaluate(test_acts_dedup, decisiontree_predictions_dedup, name1=f"Decision Tree", name2="Deduplicated data")
     evaluate(test_acts_dup, decisiontree_predictions_dup, name1=f"Decision Tree", name2="Original data")
+    evaluate(test_acts_dedup, logisticregression_predictions_dedup, name1=f"Logistic Regression", name2="Deduplicated data")
+    evaluate(test_acts_dup, logisticregression_predictions_dup, name1=f"Logistic Regression", name2="Original data")
 
 
  
