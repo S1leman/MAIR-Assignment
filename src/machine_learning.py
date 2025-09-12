@@ -31,9 +31,6 @@ def read_data(path,dedup: bool = False):
 
 
 
-
-
-
 def split_and_save_dataset(dialogue_act, utterance, train_path, test_path, test_size=0.15, random_state=42):
     train_acts, test_acts, train_utterances, test_utterances = train_test_split(
         dialogue_act, utterance, test_size=test_size, random_state=random_state
@@ -51,27 +48,55 @@ def split_and_save_dataset(dialogue_act, utterance, train_path, test_path, test_
 
 
 
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.tree import DecisionTreeClassifier
+def decision_tree(train_acts, test_acts, train_utterances, test_utterances): 
+    # convert text to Bag of Words
+    vectorizer = CountVectorizer()
+    X_train = vectorizer.fit_transform(train_utterances)
+    X_test = vectorizer.transform(test_utterances)  # <- transform only, don’t fit!
+
+    clf = DecisionTreeClassifier(random_state=42).fit(X_train, train_acts)
+    y_pred = clf.predict(X_test)
+    print(accuracy_score(test_acts, y_pred))
+    return y_pred
+
+
+def evaluate(y_true, y_pred,  name1="Model", name2="Dataset"):
+    acc = accuracy_score(y_true, y_pred)
+    print(f"\n-- {name1} on {name2} --")
+    print(f"Accuracy: {acc:.4f}")
+    print(classification_report(y_true, y_pred, zero_division=0))
+    print("Confusion matrix (rows=true, cols=pred):")
+    print(confusion_matrix(y_true, y_pred))
+
+
+
+
 
 def main(): 
     path = "data/dialog_acts.dat"
     # original data
     dialogue_act_dup, utterance_dup = read_data(path, dedup=False)
-    split_and_save_dataset(
+    train_acts_dup, test_acts_dup, train_utterances_dup, test_utterances_dup=split_and_save_dataset(
         dialogue_act_dup, utterance_dup,
         train_path="data/train_dataset_dup.dat",
-        test_path="data/test_dataset_dup_.dat",
-        test_size=0.15, random_state=42
+        test_path="data/test_dataset_dup.dat"
     )
 
     # deduplicated data
-    dialogue_act_dedup, dialogue_act_dedup = read_data(path, dedup=True)
-    split_and_save_dataset(
-        dialogue_act_dedup, dialogue_act_dedup,
+    dialogue_act_dedup, utterance_dedup = read_data(path, dedup=True)
+    train_acts_dedup, test_acts_dedup, train_utterances_dedup, test_utterances_dedup=split_and_save_dataset(
+        dialogue_act_dedup, utterance_dedup,
         train_path="data/train_dataset_dedup.dat",
-        test_path="data/test_dataset_dedup.dat",
-        test_size=0.15, random_state=42
+        test_path="data/test_dataset_dedup.dat"
     )
 
+    decisiontree_predictions = decision_tree(train_acts_dedup, test_acts_dedup, train_utterances_dedup, test_utterances_dedup)
+    # Evaluate
+    evaluate(test_acts_dedup, decisiontree_predictions, name1=f"Decision Tree", name2="Original data")
+
+    
 if __name__ == '__main__':
     main()
 
