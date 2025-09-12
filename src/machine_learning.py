@@ -66,9 +66,9 @@ def evaluate(y_true, y_pred,  name1="Model", name2="Dataset"):
     acc = accuracy_score(y_true, y_pred)
     print(f"\n-- {name1} on {name2} --")
     print(f"Accuracy: {acc:.4f}")
-    print(classification_report(y_true, y_pred, zero_division=0))
-    print("Confusion matrix (rows=true, cols=pred):")
-    print(confusion_matrix(y_true, y_pred))
+    #print(classification_report(y_true, y_pred, zero_division=0))
+    #print("Confusion matrix (rows=true, cols=pred):")
+    #print(confusion_matrix(y_true, y_pred))
 
 
 
@@ -92,10 +92,13 @@ def main():
         test_path="data/test_dataset_dedup.dat"
     )
 
-    decisiontree_predictions = decision_tree(train_acts_dedup, test_acts_dedup, train_utterances_dedup, test_utterances_dedup)
+    decisiontree_predictions_dedup = decision_tree(train_acts_dedup, test_acts_dedup, train_utterances_dedup, test_utterances_dedup)
+    decisiontree_predictions_dup = decision_tree(train_acts_dup, test_acts_dup, train_utterances_dup, test_utterances_dup)
+
     # Evaluate
-    evaluate(test_acts_dedup, decisiontree_predictions, name1=f"Decision Tree", name2="Original data")
-    print('done')
+    evaluate(test_acts_dedup, decisiontree_predictions_dedup, name1=f"Decision Tree", name2="Deduplicated data")
+    evaluate(test_acts_dup, decisiontree_predictions_dup, name1=f"Decision Tree", name2="Original data")
+
     
 if __name__ == '__main__':
     main()
