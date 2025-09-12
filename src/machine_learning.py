@@ -95,7 +95,7 @@ def main():
     decisiontree_predictions = decision_tree(train_acts_dedup, test_acts_dedup, train_utterances_dedup, test_utterances_dedup)
     # Evaluate
     evaluate(test_acts_dedup, decisiontree_predictions, name1=f"Decision Tree", name2="Original data")
-
+    print('done')
     
 if __name__ == '__main__':
     main()
