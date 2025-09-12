@@ -52,13 +52,12 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.tree import DecisionTreeClassifier
 def decision_tree(train_acts, test_acts, train_utterances, test_utterances): 
     # convert text to Bag of Words
-    vectorizer = CountVectorizer()
+    vectorizer = CountVectorizer(ngram_range=(1,2)) #not really necessary to use bigrams here
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances)  # <- transform only, don’t fit!
 
     clf = DecisionTreeClassifier(random_state=42).fit(X_train, train_acts)
     y_pred = clf.predict(X_test)
-    print(accuracy_score(test_acts, y_pred))
     return y_pred
 
 
@@ -69,7 +68,6 @@ def evaluate(y_true, y_pred,  name1="Model", name2="Dataset"):
     #print(classification_report(y_true, y_pred, zero_division=0))
     #print("Confusion matrix (rows=true, cols=pred):")
     #print(confusion_matrix(y_true, y_pred))
-
 
 
 
@@ -99,6 +97,8 @@ def main():
     evaluate(test_acts_dedup, decisiontree_predictions_dedup, name1=f"Decision Tree", name2="Deduplicated data")
     evaluate(test_acts_dup, decisiontree_predictions_dup, name1=f"Decision Tree", name2="Original data")
 
+
+ 
     
 if __name__ == '__main__':
     main()
