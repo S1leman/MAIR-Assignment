@@ -25,31 +25,39 @@ def read_data(path):
 def baseline_model1(test_data, majority_label):
     return [majority_label] * len(test_data)
 
-
-def rulebased_system(test_data):
+def rulebased_system(utterances):
     """ Function that defines the rule-based system"""
     rules = {
-            'thankyou': ['thank you', 'thanks'],
-            'ack': ['okay'] ,
-            'affrm': ['yes'],
-            'bye': ['goodbye'],
-            'confirm': ['is there'],
-            'deny': ['dont want'],
-            'hello': ['hello', 'hi', 'hey'],
-            'inform': ['i am looking for', 'i want', 'i need'],
-            'negate': ['no'],
-            'null': ['cough'],
-            'repeat': ['say that again'],
-            'reqalts': ['how about'],
-            'reqmore': ['more'],
-            'request': ['what is'],
-            'restart': ['start over']
+    "thankyou": ["thank you", "thanks", "thankyou", "thx"],
+    "bye": ["goodbye", "good bye", "see you", "thank you good bye"],
+    "hello": ["hello", "hi", "hey"],
+    "affirm": ["yes", "yeah", "yep", "right", "correct", "exactly"],
+    "ack": ["okay", "ok", "alright", "uh", "um", "mm"],
+    "negate": ["no", "nope", "nah"],
+    "deny": ["dont want", "don't want", "wrong", "not "],
+    "confirm": ["is it", "is that", "does it", "do they", "are they"],
+    "repeat": ["repeat", "say that again", "could you repeat", "please repeat"],
+    "reqalts": ["anything else", "how about", "another option", "something else"],
+    "reqmore": ["more"],
+    "request": [
+        "what is", "whats", "what's", "phone number", "address", "postcode",
+        "post code", "price range", "and the price", "can i get", "give me", "tell me"
+    ],
+    "restart": ["start over", "restart"],
+    "null": ["noise", "sil", "um", "uh"],
+    # fallback: user preferences (slots/constraints)
+    "inform": [
+        "looking for", "i want", "i need", "restaurant", "food", "cuisine",
+        "cheap", "expensive", "moderate", "north", "south", "east", "west",
+        "centre", "center", "area", "any"
+    ]
+}
 
-    }
+
     majority_class = "inform"
 
     predictions = []
-    for utternace in test_data:
+    for utternace in utterances:
         prediction = majority_class
         found = False
         for label, keywords_list in rules.items():
@@ -65,33 +73,40 @@ def rulebased_system(test_data):
         predictions.append(prediction)
     return predictions
 
-def split_and_save_dataset(dialogue_act, utterance, train_path, test_path, test_size=0.15, random_state=42):
+def split_and_save_dataset(dialogue_act, utterance, test_size):
     train_acts, test_acts, train_utterances, test_utterances = train_test_split(
-        dialogue_act, utterance, test_size=test_size, random_state=random_state
+        dialogue_act, utterance, test_size=test_size, random_state=42
     )
 
-    with open(train_path, 'w') as train_file:
+    with open('data/train_dataset.dat', 'w') as train_file:
         for act, utter in zip(train_acts, train_utterances):
             train_file.write(f"{act} {utter}\n")
 
-    with open(test_path, 'w') as test_file:
+    with open('data/test_dataset.dat', 'w') as test_file:
         for act, utter in zip(test_acts, test_utterances):
             test_file.write(f"{act} {utter}\n")
 
     return train_acts, test_acts, train_utterances, test_utterances
 
+def accuracy(y_true, y_pred):
+    return sum(a == b for a, b in zip(y_true, y_pred)) / len(y_true)
+
+
 def main(): 
-    path = "data/dialog_acts_test.dat"
+    path = "data/dialog_acts.dat"
     dialogue_act, utterance = read_data(path)
-    
+
     train_acts, test_acts, train_utterances, test_utterances = split_and_save_dataset(
-        dialogue_act, utterance, 'data/train_dataset.dat', 'data/test_dataset.dat'
+        dialogue_act, utterance, 0.15
     )
 
     predictions = baseline_model1(test_acts, "inform") # given: "inform" -> the majority label
+ 
+
+    y_pred_rule = rulebased_system(test_utterances) 
+    print("Rule-based baseline accuracy:", accuracy(test_acts, y_pred_rule))
 
     rulebased_predictions = rulebased_system(utterance)
-    print("Rule-based system predictions:", rulebased_predictions)
     
     while True:
         user_input = input("Enter an utterance (type 'exit' to quit): ")
