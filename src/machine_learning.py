@@ -42,7 +42,6 @@ def split_and_save_dataset(dialog_act_labels, utterances, train_path, test_path,
     utterances_train, utterances_test, labels_train, labels_test = train_test_split(
         filtered_utterances, filtered_labels, test_size=test_size, random_state=random_state, stratify=filtered_labels
     )
-    # ...existing code...
     with open(train_path, "w", encoding="utf-8") as train_file:
         for label, utterance in zip(labels_train, utterances_train):
             train_file.write(f"{label} {utterance}\n")
