@@ -1,146 +1,158 @@
-from typing import List, Dict, Tuple
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, f1_score
-import utils
-import baseline_models as baselines
-import ml_models as ml
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+import numpy as np
+from collections import Counter, defaultdict
 
-ALL_LABELS = [
-    "ack", "affirm", "bye", "confirm", "deny", "hello", "inform",
-    "negate", "null", "repeat", "reqalts", "reqmore", "request",
-    "restart", "thankyou"
-]
+def print_misclassifications(y_true, y_pred, utterances, model_name="Model", dataset_name="Dataset"):
+    print(f"\n-- Misclassifications for {model_name} on {dataset_name} --")
+    errors = 0
+    for actual, pred, utt in zip(y_true, y_pred, utterances):
+        if actual != pred:
+            print(f"Utterance: {utt}")
+            print(f"  Predicted: {pred}")
+            print(f"  Actual:    {actual}\n")
+            errors += 1
+    if errors == 0:
+        print("  No misclassifications found.")
+    print(f"Total misclassifications: {errors}")
 
-def compute_metrics(y_true, y_pred, labels):
-    acc = accuracy_score(y_true, y_pred)
-    macro_f1 = f1_score(y_true, y_pred, labels=labels, average='macro', zero_division=0)
-    weighted_f1 = f1_score(y_true, y_pred, labels=labels, average='weighted', zero_division=0)
-    prec, rec, f1, support = precision_recall_fscore_support(
-        y_true, y_pred, labels=labels, zero_division=0
+def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_name="Dataset"):
+    print(f"\n-- Misclassification Summary for {model_name} on {dataset_name} --")
+    errors = defaultdict(Counter)
+
+    for actual, pred in zip(y_true, y_pred):
+        if actual != pred:
+            errors[actual][pred] += 1
+
+    if not errors:
+        print("  No misclassifications found.")
+        return
+
+    for actual_act, preds in errors.items():
+        details = ", ".join([f"{count}× as {pred_act}" for pred_act, count in preds.items()])
+        print(f"For dialogue act '{actual_act}' it was misclassified {sum(preds.values())} times: {details}")
+
+def print_detailed_metrics(y_true, y_pred, model_name):
+    VALID_ACTS = [
+        "ack", "affirm", "bye", "confirm", "deny", "hello", "inform", "negate",
+        "null", "repeat", "reqalts", "reqmore", "request", "restart", "thankyou"
+    ]
+    print(f"\n{'='*60}")
+    print(f"EVALUATION: {model_name}")
+    print(f"{'='*60}")
+    
+    accuracy = accuracy_score(y_true, y_pred)
+    print(f"Accuracy: {accuracy:.4f}")
+    
+    labels = VALID_ACTS
+    
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, average=None, zero_division=0
     )
-    per_label = {}
-    for i in range(len(labels)):
-        lbl = labels[i]
-        per_label[lbl] = {
-            "precision": float(prec[i]),
-            "recall": float(rec[i]),
-            "f1": float(f1[i]),
-            "support": int(support[i]),
-        }
-    return {
-        "accuracy": acc,
-        "macro_f1": macro_f1,
-        "weighted_f1": weighted_f1,
-        "per_label": per_label
-    }
+    
+    print(f"\nPer-class metrics:")
+    print(f"{'Class':<15} {'Precision':<10} {'Recall':<10} {'F1-Score':<10} {'Support':<8}")
+    print("-" * 65)
+    for i, label in enumerate(labels):
+        print(f"{label:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<8}")
+   
+    macro_precision = np.mean(precision)
+    macro_recall = np.mean(recall)
+    macro_f1 = np.mean(f1)
+    
+    if support.sum() == 0:
+        weighted_precision = 0.0
+        weighted_recall = 0.0
+        weighted_f1 = 0.0
+    else:
+        weighted_precision = np.average(precision, weights=support)
+        weighted_recall = np.average(recall, weights=support)
+        weighted_f1 = np.average(f1, weights=support)
 
-def print_report(title, metrics, labels):
-    print("\n" + "="*60)
-    print(f"{title:^60}")
-    print("="*60)
-    print(f"{'Accuracy':<15}: {metrics['accuracy']:.4f}")
-    print(f"{'Macro F1':<15}: {metrics['macro_f1']:.4f}")
-    print(f"{'Weighted F1':<15}: {metrics['weighted_f1']:.4f}")
-    print("-"*60)
-    print(f"{'Label':<12}{'Precision':>10}{'Recall':>10}{'F1':>10}{'Support':>10}")
-    print("-"*60)
-    for lbl in labels:
-        m = metrics["per_label"].get(lbl, {"precision": 0, "recall": 0, "f1": 0, "support": 0})
-        print(f"{lbl:<12}{m['precision']:>10.2f}{m['recall']:>10.2f}{m['f1']:>10.2f}{m['support']:>10}")
-    print("="*60)
+    print("-" * 65)
+    print(f"{'Macro avg':<15} {macro_precision:<10.4f} {macro_recall:<10.4f} {macro_f1:<10.4f} {len(y_true):<8}")
+    print(f"{'Weighted avg':<15} {weighted_precision:<10.4f} {weighted_recall:<10.4f} {weighted_f1:<10.4f} {len(y_true):<8}")
+    
 
-def analyze_difficult_cases(y_test, labels, all_predictions, X_test):
-    for model_name in all_predictions:
-        metrics = all_predictions[model_name]
-        print("\n" + "="*60)
-        print(f"Error Analysis for: {model_name}")
-        print("="*60)
-        print("\nMost Difficult Dialog Acts (lowest F1):")
-        print(f"{'Label':<12}{'F1':>8}{'Precision':>12}{'Recall':>10}{'Support':>10}")
-        print("-"*60)
-        label_f1_list = []
-        for lbl in labels:
-            vals = metrics["per_label"].get(lbl, {"f1": 0, "precision": 0, "recall": 0, "support": 0})
-            label_f1_list.append((lbl, vals))
-        label_f1_list.sort(key=lambda x: x[1]["f1"])
-        for i in range(min(5, len(label_f1_list))):
-            lbl, vals = label_f1_list[i]
-            print(f"{lbl:<12}{vals['f1']:>8.2f}{vals['precision']:>12.2f}{vals['recall']:>10.2f}{vals['support']:>10}")
-        print("\nUtterances Misclassified by This Model:")
+def print_model_comparison(results):
+    print(f"\n{'='*80}")
+    print(f"MODEL COMPARISON")
+    print(f"{'='*80}")
+    
+    print(f"{'Model':<35} {'Accuracy':<10} {'Macro F1':<10} {'Weighted F1':<12}")
+    print("-" * 80)
+    
+    for model_name, (y_true, y_pred) in results.items():
+        accuracy = accuracy_score(y_true, y_pred)
         
-        misclassified_idxs = []
-        for i in range(len(y_test)):
-            true_label = y_test[i]
-            if "y_pred" in metrics and i < len(metrics["y_pred"]):
-                pred_label = metrics["y_pred"][i]
-            else:
-                pred_label = None
-            if pred_label != true_label:
-                misclassified_idxs.append(i)
-        print(f"Total misclassified: {len(misclassified_idxs)}")
-        print(f"{'Idx':<5}{'True':<12}{'Predicted':<12}{'Utterance'}")
-        print("-"*60)
-        for idx in misclassified_idxs[:5]:
-            print(f"{idx:<5}{y_test[idx]:<12}{metrics['y_pred'][idx]:<12}{repr(X_test[idx])}")
-        print("="*60)
+        labels = sorted(list(set(y_true)))        
+        precision, recall, f1, support = precision_recall_fscore_support(
+            y_true, y_pred, labels=labels, average=None, zero_division=0
+        )
+        
+        macro_f1 = np.mean(f1)
+        weighted_f1 = np.average(f1, weights=support)
+        
+        print(f"{model_name:<35} {accuracy:<10.4f} {macro_f1:<10.4f} {weighted_f1:<12.4f}")
 
-def evaluate_model(X_train, X_test, y_train, y_test, labels, ml_only=False):
-    results = {}
-    models = {
-        "Majority baseline": lambda: baselines.majority_baseline_model(X_test, "inform"),
-        "Rule-based baseline": lambda: baselines.rules_baseline_model(X_test),
-        "Decision Tree model": lambda: ml.decision_tree_classifier(y_train, y_test, X_train, X_test),
-        "Logistic Regr model": lambda: ml.logistic_regression_classifier(y_train, y_test, X_train, X_test),
-        "MLP model": lambda: ml.mlp_classifier(y_train, y_test, X_train, X_test)
+def print_deduplication_analysis(results):
+    print(f"\n{'='*60}")
+    print(f"DEDUPLICATION IMPACT")
+    print(f"{'='*60}")
+    
+    model_pairs = {
+        'Decision Tree': ('Decision Tree (Original)', 'Decision Tree (Deduplicated)'),
+        'Logistic Regression': ('Logistic Regression (Original)', 'Logistic Regression (Deduplicated)'),
+        'MLP': ('MLP (Original)', 'MLP (Deduplicated)')
     }
-    if ml_only:
-        models = {k: v for k, v in models.items() if "baseline" not in k.lower()}
-    for name in models:
-        func = models[name]
-        y_pred = func()
-        metrics = compute_metrics(y_test, y_pred, labels)
-        metrics['y_pred'] = y_pred
-        results[name] = metrics
-        print_report(f"Evaluation: {name}", metrics, labels)
-    return results
+    
+    print(f"{'Model':<20} {'Original':<10} {'Dedup':<10} {'Difference':<12}")
+    print("-" * 55)
+    
+    for model_type, (orig_name, dedup_name) in model_pairs.items():
+        if orig_name in results and dedup_name in results:
+            orig_acc = accuracy_score(results[orig_name][0], results[orig_name][1])
+            dedup_acc = accuracy_score(results[dedup_name][0], results[dedup_name][1])
+            diff = dedup_acc - orig_acc
+            
+            print(f"{model_type:<20} {orig_acc:<10.4f} {dedup_acc:<10.4f} {diff:<10.4f}")
 
-def evaluate_split(X, y, split_name, random_state=42, ml_only=False):
-    y_train, y_test, X_train, X_test = utils.split_and_save_dataset(
-        y, X,
-        f"data/train_dataset_{split_name.replace(' ', '_').lower()}.dat",
-        f"data/test_dataset_{split_name.replace(' ', '_').lower()}.dat",
-        test_size=0.15,
-        random_state=random_state
-    )
-    observed = set(y_train) | set(y_test)
-    labels = [lbl for lbl in ALL_LABELS if lbl in observed] or sorted(list(observed))
-    results = evaluate_model(X_train, X_test, y_train, y_test, labels, ml_only=ml_only)
-    print("\n" + "="*60)
-    print(f"Results summary [{split_name}]".center(60))
-    print("="*60)
-    print(f"{'Model':<22}{'Accuracy':>10}{'Macro F1':>10}{'Weighted F1':>12}")
-    print("-"*60)
-    for name in results:
-        m = results[name]
-        print(f"{name:<22}{m['accuracy']:>10.4f}{m['macro_f1']:>10.4f}{m['weighted_f1']:>12.4f}")
-    print("="*60)
-    analyze_difficult_cases(y_test, labels, results, X_test)
-    return results
-
-def run_full_evaluation(data_path):
-    acts_orig, utts_orig = utils.read_data(data_path, deduplicate=False)
-    print(f"Loaded original: n={len(utts_orig)}")
-    acts_dedup, utts_dedup = utils.read_data(data_path, deduplicate=True)
-    print(f"Loaded deduplicated: n={len(utts_dedup)}")
-    print("\n" + "#"*60)
-    print("ORIGINAL SPLIT".center(60))
-    print("#"*60)
-    res_orig = evaluate_split(utts_orig, acts_orig, "Original split")
-    print("\n" + "#"*60)
-    print("DEDUPLICATED SPLIT".center(60))
-    print("#"*60)
-    res_dedup = evaluate_split(utts_dedup, acts_dedup, "Deduplicated split", ml_only=True)
-    return res_orig, res_dedup
-
-if __name__ == "__main__":
-    DATA_PATH = "data/dialog_acts.dat"
-    run_full_evaluation(DATA_PATH)
+def full_evaluation(results, data=None):
+    print(f"\n{'#'*80}")
+    print(f"DIALOG ACT CLASSIFICATION EVALUATION")
+    print(f"{'#'*80}")
+    
+    for model_name, (y_true, y_pred) in results.items():
+        print_detailed_metrics(y_true, y_pred, model_name)
+        
+        if data:
+            dataset_type = "Original" if "Original" in model_name else "Deduplicated"
+            
+            if "Original" in model_name:
+                utterances = data['orig'][3]   
+            else:
+                utterances = data['dedup'][3]   
+            
+            summarize_misclassifications(y_true, y_pred, model_name, dataset_type)
+            
+            print(f"\n-- Sample Misclassifications for {model_name} --")
+            error_count = 0
+            for actual, pred, utt in zip(y_true, y_pred, utterances):
+                if actual != pred:
+                    print(f"Utterance: {utt}")
+                    print(f"  Predicted: {pred}")
+                    print(f"  Actual:    {actual}\n")
+                    error_count += 1
+                    if error_count >= 3:
+                        total_errors = sum(1 for a, p in zip(y_true, y_pred) if a != p)
+                        if total_errors > 3:
+                            print(f"... and {total_errors - 3} more misclassifications")
+                        break
+            if error_count == 0:
+                print("  No misclassifications found.")
+    
+    print_model_comparison(results)
+    print_deduplication_analysis(results)
+    
+    print(f"\n{'#'*80}")
+    print(f"EVALUATION COMPLETE")
+    print(f"{'#'*80}")

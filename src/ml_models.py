@@ -1,31 +1,32 @@
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
-import numpy as np
-import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input
 from tensorflow.keras.utils import to_categorical
 
-def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances): 
+def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     vectorizer = CountVectorizer(ngram_range=(1,2))
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
     clf = DecisionTreeClassifier(random_state=42).fit(X_train, train_acts)
     y_pred = clf.predict(X_test)
+    if return_model:
+        return clf, vectorizer
     return y_pred
 
-def logistic_regression_classifier(train_acts, test_acts, train_utterances, test_utterances): 
+def logistic_regression_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     vectorizer = CountVectorizer(ngram_range=(1,2)) 
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
     clf = LogisticRegression(random_state=42).fit(X_train, train_acts)
     y_pred = clf.predict(X_test)
+    if return_model:
+        return clf, vectorizer
     return y_pred
 
-
-def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances): 
+def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     vectorizer = CountVectorizer(ngram_range=(1,2))
     X_train = vectorizer.fit_transform(train_utterances).toarray()
     X_test = vectorizer.transform(test_utterances).toarray()
@@ -48,9 +49,11 @@ def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances):
 
     model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 
-    model.fit(X_train, y_train, epochs=8, batch_size=64, validation_split=0.1, verbose=0)
+    model.fit(X_train, y_train, epochs=8, batch_size=64, verbose=0)
 
     y_pred_probs = model.predict(X_test, verbose=0)
     y_pred_int = y_pred_probs.argmax(axis=1)
     y_pred = le.inverse_transform(y_pred_int)
+    if return_model:
+        return model, vectorizer, le
     return y_pred

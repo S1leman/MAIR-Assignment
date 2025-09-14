@@ -1,22 +1,26 @@
 from sklearn.model_selection import train_test_split
-def read_data(path,deduplicate: bool = False):
+def read_data(path, deduplicate: bool = False):
     dialogue_act = []
     utterance = []
-    act_by_utterance_map = {}
+    utterance_to_first_act = {} 
 
     with open(path, 'r') as file:
         lines = file.readlines()
         for line in lines:
             data = line.strip().lower().split(' ', 1)
-
-            if data[1] not in utterance: 
-                act_by_utterance_map[data[1]] = data[0]
-                dialogue_act.append(data[0])
-                utterance.append(data[1])
-            else:
+            
+            current_act = data[0]
+            current_utterance = data[1]
+            
+            if current_utterance in utterance_to_first_act:
+                act_to_use = utterance_to_first_act[current_utterance]
                 if not deduplicate:
-                     dialogue_act.append(act_by_utterance_map[data[1]])
-                     utterance.append(data[1])
+                    dialogue_act.append(act_to_use)
+                    utterance.append(current_utterance)
+            else:
+                utterance_to_first_act[current_utterance] = current_act
+                dialogue_act.append(current_act)
+                utterance.append(current_utterance)
                 
     return dialogue_act, utterance
 
