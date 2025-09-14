@@ -35,6 +35,7 @@ def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances):
 
     num_classes = len(le.classes_)
     y_train = to_categorical(y_train_int, num_classes=num_classes)
+    y_test = to_categorical(y_test_int, num_classes=num_classes)
 
     model = Sequential([
         Input(shape=(X_train.shape[1],)),
