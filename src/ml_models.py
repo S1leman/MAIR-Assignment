@@ -5,7 +5,7 @@ from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense, Dropout, Input
 from tensorflow.keras.utils import to_categorical
 
 def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances): 
@@ -35,10 +35,10 @@ def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances):
 
     num_classes = len(le.classes_)
     y_train = to_categorical(y_train_int, num_classes=num_classes)
-    y_test = to_categorical(y_test_int, num_classes=num_classes)
 
     model = Sequential([
-        Dense(256, activation="relu", input_shape=(X_train.shape[1],)),
+        Input(shape=(X_train.shape[1],)),
+        Dense(256, activation="relu"),
         Dropout(0.3),
         Dense(128, activation="relu"),
         Dropout(0.3),
