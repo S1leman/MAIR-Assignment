@@ -1,9 +1,5 @@
 # Dialog Act Classification System
 
-This repository implements a dialog act classification system for spoken utterances, including baseline and machine learning models, evaluation utilities, and an interactive CLI for manual predictions.
-
----
-
 ## File Overview
 
 ### `main.py`
@@ -16,7 +12,7 @@ This repository implements a dialog act classification system for spoken utteran
 
 ### `baseline_models.py`
 - **Purpose:** Baseline classifiers.
-- **Description:** Implements a majority class baseline and a simple keyword-based rules baseline.
+- **Description:** Implements a majority class baseline and a keyword-based rules baseline.
 
 ### `ml_models.py`
 - **Purpose:** Machine learning classifiers.
@@ -32,12 +28,11 @@ This repository implements a dialog act classification system for spoken utteran
 
 1. **Install Requirements**
    ```bash
-   pip install scikit-learn tensorflow
+   pip install scikit-learn tensorflow numpy
    ```
 
 2. **Prepare Data**
-   - Place your dialog act data file at `data/dialog_acts.dat`.
-   - Format: `<dialog_act> <utterance>` (one per line).
+   - Place dialog act data file at `data/dialog_acts.dat`.
 
 3. **Run the Program**
    ```bash
@@ -48,7 +43,7 @@ This repository implements a dialog act classification system for spoken utteran
 4. **Interactive Mode**
    - Follow prompts to select dataset and model.
    - Enter utterances to see predicted dialog acts.
-   - Type `back` to change model/dataset, or `exit` to quit.
+   - Type `back` to change model/dataset, or `exit`,`quit` to quit.
 
 ---
 
