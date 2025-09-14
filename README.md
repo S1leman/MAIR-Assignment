@@ -9,7 +9,7 @@ pip install scikit-learn tensorflow numpy
 ## Basic Execution
 
 ```bash
-python main.py
+python src/main.py
 ```
 
 ## Data Format
