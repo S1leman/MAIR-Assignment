@@ -1,0 +1,36 @@
+import pandas as pd
+
+# Load the CSV file
+file_path = "data/restaurant_info.csv"
+df = pd.read_csv(file_path)
+
+def lookup(filters, df=df):
+    """
+    Filters restaurants based on food, pricerange, and area.
+    Returns one restaurant (first match) and a list of alternatives if available.
+    """
+    # Apply filters
+    filtered_df = df.copy()
+    for key, value in filters.items():
+        if value != "dontcare":  # only apply if filter is given
+            filtered_df = filtered_df[filtered_df[key].str.lower() == value.lower()]
+    
+    if filtered_df.empty:
+        return None, [] 
+    
+    # First match
+    first_match = filtered_df.iloc[0].to_dict()
+    
+    # Alternatives (if more than one match)
+    alternatives = filtered_df.iloc[1:].to_dict(orient="records")
+    
+    return first_match["restaurantname"], alternatives #first_match["restaurantname"]
+
+
+# Example usage
+filters = {"food": "italian", "pricerange": "moderate", "area": "dontcare"}
+match, alternatives = lookup(filters)
+print("First match:", match)
+print("\nAlternatives:")
+for alt in alternatives:
+    print(alt["restaurantname"])
