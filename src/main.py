@@ -22,7 +22,6 @@ def load_data():
     
     print(f"Original: {len(train_acts_orig)} train, {len(test_acts_orig)} test")
     print(f"Deduplicated: {len(train_acts_dedup)} train, {len(test_acts_dedup)} test")
-    print(f"Majority class: 'inform'")
     
     return {
         'orig': (train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig),
@@ -35,8 +34,10 @@ def train_all_models(data):
     train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig = data['orig']
     train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup = data['dedup']
 
-    maj_pred_orig = majority_baseline_model(test_utts_orig, 'inform')
+    majority_label = Counter(train_acts_orig).most_common(1)[0][0]
+    maj_pred_orig = majority_baseline_model(test_utts_orig, majority_label)
     rules_pred_orig = rules_baseline_model(test_utts_orig)
+    print(f"Majority class: {majority_label}")
 
     dt_model_orig, dt_vectorizer_orig = decision_tree_classifier(
         train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig, return_model=True)
@@ -47,7 +48,7 @@ def train_all_models(data):
 
     dt_pred_orig = dt_model_orig.predict(dt_vectorizer_orig.transform(test_utts_orig))
     lr_pred_orig = lr_model_orig.predict(lr_vectorizer_orig.transform(test_utts_orig))
-    mlp_pred_orig_int = mlp_model_orig.predict(mlp_vectorizer_orig.transform(test_utts_orig).toarray()).argmax(axis=1)
+    mlp_pred_orig_int = mlp_model_orig.predict(mlp_vectorizer_orig.transform(test_utts_orig).toarray())
     mlp_pred_orig = mlp_le_orig.inverse_transform(mlp_pred_orig_int)
 
     dt_model_dedup, dt_vectorizer_dedup = decision_tree_classifier(
@@ -59,9 +60,9 @@ def train_all_models(data):
 
     dt_pred_dedup = dt_model_dedup.predict(dt_vectorizer_dedup.transform(test_utts_dedup))
     lr_pred_dedup = lr_model_dedup.predict(lr_vectorizer_dedup.transform(test_utts_dedup))
-    mlp_pred_dedup_int = mlp_model_dedup.predict(mlp_vectorizer_dedup.transform(test_utts_dedup).toarray()).argmax(axis=1)
+    mlp_pred_dedup_int = mlp_model_dedup.predict(mlp_vectorizer_dedup.transform(test_utts_dedup).toarray())
     mlp_pred_dedup = mlp_le_dedup.inverse_transform(mlp_pred_dedup_int)
-
+    
     results = {
         "Majority Baseline (Original)": (test_acts_orig, maj_pred_orig),
         "Rules Baseline (Original)": (test_acts_orig, rules_pred_orig),

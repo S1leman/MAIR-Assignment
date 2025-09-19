@@ -1,6 +1,7 @@
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
 import numpy as np
 from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
 
 def print_misclassifications(y_true, y_pred, utterances, model_name="Model", dataset_name="Dataset"):
     print(f"\n-- Misclassifications for {model_name} on {dataset_name} --")
@@ -30,6 +31,29 @@ def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_nam
     for actual_act, preds in errors.items():
         details = ", ".join([f"{count}× as {pred_act}" for pred_act, count in preds.items()])
         print(f"For dialogue act '{actual_act}' it was misclassified {sum(preds.values())} times: {details}")
+
+def plot_confusion_matrix(y_true, y_pred, labels, model_name):
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    ax.figure.colorbar(im, ax=ax)
+    ax.set(
+        xticks=np.arange(cm.shape[1]),
+        yticks=np.arange(cm.shape[0]),
+        xticklabels=labels, yticklabels=labels,
+        ylabel='True label',
+        xlabel='Predicted label',
+        title=f'Confusion Matrix: {model_name}'
+    )
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], 'd'),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+    fig.tight_layout()
+    plt.show()
 
 def print_detailed_metrics(y_true, y_pred, model_name):
     VALID_ACTS = [
@@ -71,8 +95,9 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     print("-" * 65)
     print(f"{'Macro avg':<15} {macro_precision:<10.4f} {macro_recall:<10.4f} {macro_f1:<10.4f} {len(y_true):<8}")
     print(f"{'Weighted avg':<15} {weighted_precision:<10.4f} {weighted_recall:<10.4f} {weighted_f1:<10.4f} {len(y_true):<8}")
-    
 
+    plot_confusion_matrix(y_true, y_pred, labels, model_name)
+    
 def print_model_comparison(results):
     print(f"\n{'='*80}")
     print(f"MODEL COMPARISON")

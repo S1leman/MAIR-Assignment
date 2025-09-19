@@ -2,15 +2,17 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Input
-from tensorflow.keras.utils import to_categorical
+from sklearn.neural_network import MLPClassifier
+from sklearn.utils.class_weight import compute_sample_weight
+
+#TO-DO: TUNE HYPERPARAMETERS
 
 def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     vectorizer = CountVectorizer(ngram_range=(1,2))
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
-    clf = DecisionTreeClassifier(random_state=42).fit(X_train, train_acts)
+    clf = DecisionTreeClassifier(max_depth=20, min_samples_split=5, class_weight='balanced', random_state=42)
+    clf.fit(X_train, train_acts)  
     y_pred = clf.predict(X_test)
     if return_model:
         return clf, vectorizer
@@ -20,7 +22,7 @@ def logistic_regression_classifier(train_acts, test_acts, train_utterances, test
     vectorizer = CountVectorizer(ngram_range=(1,2)) 
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
-    clf = LogisticRegression(random_state=42).fit(X_train, train_acts)
+    clf = LogisticRegression(random_state=42, class_weight='balanced').fit(X_train, train_acts)
     y_pred = clf.predict(X_test)
     if return_model:
         return clf, vectorizer
@@ -28,32 +30,17 @@ def logistic_regression_classifier(train_acts, test_acts, train_utterances, test
 
 def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     vectorizer = CountVectorizer(ngram_range=(1,2))
-    X_train = vectorizer.fit_transform(train_utterances).toarray()
-    X_test = vectorizer.transform(test_utterances).toarray()
+    X_train = vectorizer.fit_transform(train_utterances)
+    X_test = vectorizer.transform(test_utterances)
     le = LabelEncoder()
-    y_train_int = le.fit_transform(train_acts)
-    y_test_int = le.transform(test_acts)
+    y_train = le.fit_transform(train_acts)
+    y_test = le.transform(test_acts)
+    sample_weights = compute_sample_weight('balanced', y_train)
 
-    num_classes = len(le.classes_)
-    y_train = to_categorical(y_train_int, num_classes=num_classes)
-    y_test = to_categorical(y_test_int, num_classes=num_classes)
-
-    model = Sequential([
-        Input(shape=(X_train.shape[1],)),
-        Dense(256, activation="relu"),
-        Dropout(0.3),
-        Dense(128, activation="relu"),
-        Dropout(0.3),
-        Dense(num_classes, activation="softmax")
-    ])
-
-    model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
-
-    model.fit(X_train, y_train, epochs=8, batch_size=64, verbose=0)
-
-    y_pred_probs = model.predict(X_test, verbose=0)
-    y_pred_int = y_pred_probs.argmax(axis=1)
+    clf = MLPClassifier(hidden_layer_sizes=(256, 128), activation="relu", max_iter=300, random_state=42)
+    clf.fit(X_train, y_train, sample_weight=sample_weights)
+    y_pred_int = clf.predict(X_test)
     y_pred = le.inverse_transform(y_pred_int)
     if return_model:
-        return model, vectorizer, le
+        return clf, vectorizer, le
     return y_pred
