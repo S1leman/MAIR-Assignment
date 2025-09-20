@@ -1,3 +1,5 @@
+from utils import format_restaurant_suggestion, detect_restart_command, detect_new_search_request
+
 class ConversationStates: 
     
     def __init__(self, system):
@@ -142,10 +144,7 @@ class ConversationStates:
         
         # Present restaurant (only if not just provided info)
         restaurant = self.system.current_restaurant
-        area_desc = f" in the {restaurant['area']} of town" if restaurant['area'] != 'centre' else " in the city centre"
-        price_desc = f" and the prices are {restaurant['pricerange']}" if restaurant['pricerange'] != 'dontcare' else ""
-        
-        suggestion_msg = f"{restaurant['restaurantname']} is a nice place{area_desc}{price_desc}"
+        suggestion_msg = format_restaurant_suggestion(restaurant)
         print(f"System: {suggestion_msg}")
         print(f"[Restaurant details: {restaurant['restaurantname']} - {restaurant['food']}, {restaurant['pricerange']}, {restaurant['area']}]")
         
@@ -162,15 +161,14 @@ class ConversationStates:
         print(f"[Classified as: {user_intent}]")
         
         # Check for restart command first
-        if user_input.lower().strip() in ['start over', 'start again', 'reset']:
+        if detect_restart_command(user_input):
             print("[User requested restart]")
             print(f"[State transition: SUGGEST_RESTAURANT → WELCOME (restart)]")
             self.system.user_requirements = {'area': None, 'pricerange': None, 'food': None}
             return self.system.states['WELCOME']
         
         # Check if user is asking for a different restaurant (new preferences)
-        input_lower = user_input.lower()
-        if any(keyword in input_lower for keyword in ['is there', 'do you have', 'find me', 'looking for', 'want', 'need']):
+        if detect_new_search_request(user_input):
             # This looks like a new search request - extract new preferences
             print(f"[Detecting new restaurant search request...]")
             new_prefs = self.system.preference_extractor.extract_preferences(user_input)
@@ -225,7 +223,7 @@ class ConversationStates:
         print(f"[Classified as: {user_intent}]")
         
         # Check for restart command
-        if user_input.lower().strip() in ['start over', 'start again', 'reset']:
+        if detect_restart_command(user_input):
             print("[User requested restart]")
             print(f"[State transition: INFORM → WELCOME (restart)]")
             self.system.user_requirements = {'area': None, 'pricerange': None, 'food': None}

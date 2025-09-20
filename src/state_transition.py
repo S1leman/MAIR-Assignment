@@ -1,6 +1,9 @@
 from ml_models import mlp_classifier
 from lookup import RestaurantLookup
-from utils import load_data
+from utils import (load_data, format_restaurant_info_response, format_restaurant_suggestion, 
+                   detect_restart_command, get_state_name_from_value, is_dontcare_response,
+                   handle_dontcare_preference, update_preferences_with_context, log_preference_changes,
+                   execute_conversation_state)
 from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
 
@@ -65,66 +68,29 @@ class RestaurantSystem:
         predicted_act = self.mlp_label_encoder.inverse_transform([prediction_int])[0]
         return predicted_act
 
-    def parse_user_input(self, user_input: str, context_stage=None):
-        """Extract and update user preferences from input"""
+    def parse_user_input(self, user_input: str, context_stage=None): 
         old_prefs = self.user_requirements.copy()
         
         # Check for restart command first
-        if user_input.lower().strip() in ['start over', 'start again', 'reset']:
+        if detect_restart_command(user_input):
             print("[User requested restart - preferences reset]")
             self.user_requirements = {'area': None, 'pricerange': None, 'food': None}
             return 'restart'
         
-        # Handle simple "any" responses based on context
-        if user_input.strip().lower() in ['any', 'anything', "doesn't matter", "dont care", "any will do", "i dont care", "any type", "any food"]:
-            if context_stage == 'ASK_AREA':
-                self.user_requirements['area'] = 'dontcare'
-                print(f"[Extracted: {{'area': 'dontcare'}}]")
-                if self.user_requirements != old_prefs:
-                    print(f"[Preferences updated: {self.user_requirements}]")
-                return
-            elif context_stage == 'ASK_PRICE':
-                self.user_requirements['pricerange'] = 'dontcare'
-                print(f"[Extracted: {{'pricerange': 'dontcare'}}]")
-                if self.user_requirements != old_prefs:
-                    print(f"[Preferences updated: {self.user_requirements}]")
-                return
-            elif context_stage == 'ASK_FOOD_TYPE':
-                self.user_requirements['food'] = 'dontcare'
-                print(f"[Extracted: {{'food': 'dontcare'}}]")
-                if self.user_requirements != old_prefs:
-                    print(f"[Preferences updated: {self.user_requirements}]")
-                return
+        # Handle simple "don't care" responses based on context
+        if is_dontcare_response(user_input):
+            handle_dontcare_preference(self.user_requirements, context_stage, old_prefs)
+            return
         
-        # Extract preferences using the sophisticated extractor
+        # Extract and validate preferences 
         extracted_prefs = self.preference_extractor.extract_preferences(user_input)
         validated_prefs, errors = self.preference_extractor.validate_preferences(extracted_prefs)
         
-        if errors:
-            print(f"[Validation warnings: {', '.join(errors)}]")
+        # Update user requirements based on context
+        update_preferences_with_context(self.user_requirements, validated_prefs, context_stage)
         
-        # Context-aware preference updating
-        if context_stage:
-            if context_stage == 'ASK_AREA' and 'area' in validated_prefs:
-                self.user_requirements['area'] = validated_prefs['area']
-            elif context_stage == 'ASK_PRICE' and 'pricerange' in validated_prefs:
-                self.user_requirements['pricerange'] = validated_prefs['pricerange']
-            elif context_stage == 'ASK_FOOD_TYPE' and 'food' in validated_prefs:
-                self.user_requirements['food'] = validated_prefs['food']
-            else:
-                for pref_type, value in validated_prefs.items():
-                    if self.user_requirements[pref_type] is None:
-                        self.user_requirements[pref_type] = value
-        else:
-            for pref_type, value in validated_prefs.items():
-                if self.user_requirements[pref_type] is None:
-                    self.user_requirements[pref_type] = value
-        
-        if validated_prefs:
-            print(f"[Extracted: {validated_prefs}]")
-        
-        if self.user_requirements != old_prefs:
-            print(f"[Preferences updated: {self.user_requirements}]")
+        # Log all changes and results
+        log_preference_changes(validated_prefs, self.user_requirements, old_prefs, errors)
 
     def check_next_stage(self): 
         if not self.user_requirements['area']:
@@ -166,66 +132,8 @@ class RestaurantSystem:
             print("System: I'm sorry, I don't have any restaurant information available to provide details.")
             return self.states['INFORM']
         
-        restaurant = self.current_restaurant
-        utterance_lower = user_input.lower()
-        
-        # Determine what specific information was requested
-        phone_requested = 'phone' in utterance_lower or 'number' in utterance_lower
-        address_requested = 'address' in utterance_lower or 'where' in utterance_lower or 'location' in utterance_lower
-        postcode_requested = 'postcode' in utterance_lower or 'post code' in utterance_lower or 'postal' in utterance_lower
-        
-        # Get available data and check if it's valid
-        phone = restaurant.get('phone', 'not available')
-        
-        addr = restaurant.get('addr')
-        has_address = addr and str(addr).lower() not in ['nan', 'none', '', 'not available']
-        
-        postcode = restaurant.get('postcode')
-        has_postcode = postcode and str(postcode).lower() not in ['nan', 'none', '', 'not available']
-        
-        # Build response based on what was requested
-        info_parts = []
-        
-        if phone_requested:
-            info_parts.append(f"The phone number of {restaurant['restaurantname']} is {phone}")
-        
-        if address_requested:
-            if has_address:
-                info_parts.append(f"Sure, {restaurant['restaurantname']} is on {addr}")
-            else:
-                info_parts.append(f"I'm sorry, the address for {restaurant['restaurantname']} is not available")
-        
-        if postcode_requested:
-            if has_postcode:
-                info_parts.append(f"The post code of {restaurant['restaurantname']} is {postcode}")
-            else:
-                info_parts.append(f"I'm sorry, the post code for {restaurant['restaurantname']} is not available")
-        
-        # Generate response
-        if phone_requested or address_requested or postcode_requested:
-            if len(info_parts) == 1:
-                print(f"System: {info_parts[0]}.")
-            elif len(info_parts) == 2:
-                print(f"System: {info_parts[0]} and {info_parts[1].lower()}.")
-            else:
-                print(f"System: {info_parts[0]}, {info_parts[1].lower()}, and {info_parts[2].lower()}.")
-        else:
-            # Default: provide all available information
-            response_parts = []
-            response_parts.append(f"The phone number of {restaurant['restaurantname']} is {phone}")
-            
-            if has_address:
-                response_parts.append(f"it is on {addr}")
-            
-            if has_postcode:
-                response_parts.append(f"the post code is {postcode}")
-            
-            if len(response_parts) == 1:
-                print(f"System: {response_parts[0]}.")
-            elif len(response_parts) == 2:
-                print(f"System: {response_parts[0]} and {response_parts[1]}.")
-            else:
-                print(f"System: {response_parts[0]}, {response_parts[1]}, and {response_parts[2]}.")
+        response = format_restaurant_info_response(self.current_restaurant, user_input)
+        print(f"System: {response}")
         
         return 'await_next_request'
     
@@ -241,49 +149,11 @@ class RestaurantSystem:
             return self.states['INFORM']
     
     def run_conversation(self): 
-        print("=" * 60)
-        print("CAMBRIDGE RESTAURANT SYSTEM DIALOG")
-        print("=" * 60)
+        self._print_conversation_header()
         
         while self.current_state and not self.conversation_ended:
             try:
-                self.conversation_turn += 1
-                print(f"\n--- Turn {self.conversation_turn} ---")
-                current_state_name = list(self.states.keys())[list(self.states.values()).index(self.current_state)]
-                print(f"[Current State: {current_state_name}]\n")
-                
-                # Execute current stage using the conversation states handler
-                if self.current_state == self.states['WELCOME']:
-                    self.current_state = self.conversation_states.welcome()
-                    
-                elif self.current_state == self.states['ASK_AREA']:
-                    self.current_state = self.conversation_states.ask_area()
-                    
-                elif self.current_state == self.states['ASK_PRICE']:
-                    self.current_state = self.conversation_states.ask_price()
-                    
-                elif self.current_state == self.states['ASK_FOOD_TYPE']:
-                    self.current_state = self.conversation_states.ask_food_type()
-                    
-                elif self.current_state == self.states['CONFIRM']:
-                    self.current_state = self.conversation_states.confirm()
-                    
-                elif self.current_state == self.states['APOLOGIZE']:
-                    self.current_state = self.conversation_states.apologize()
-                    
-                elif self.current_state == self.states['SUGGEST_RESTAURANT']:
-                    self.current_state = self.conversation_states.suggest_restaurant()
-                    
-                elif self.current_state == self.states['INFORM']:
-                    self.current_state = self.conversation_states.inform()
-                    
-                elif self.current_state == self.states['GOODBYE']:
-                    self.current_state = self.conversation_states.goodbye()
-                    
-                # Visual separator between stages
-                if self.current_state and not self.conversation_ended:
-                    print("-" * 30)
-                    
+                self._handle_conversation_turn()
             except KeyboardInterrupt:
                 print("\nConversation interrupted by user.")
                 break
@@ -291,9 +161,30 @@ class RestaurantSystem:
                 print(f"Error: {e}")
                 break
         
+        self._print_conversation_footer()
+    
+    def _print_conversation_header(self): 
+        print("=" * 60)
+        print("CAMBRIDGE RESTAURANT SYSTEM DIALOG")
+        print("=" * 60)
+    
+    def _print_conversation_footer(self): 
         print("=" * 60)
         print(f"CONVERSATION COMPLETED - Total turns: {self.conversation_turn}")
         print("=" * 60)
+    
+    def _handle_conversation_turn(self): 
+        self.conversation_turn += 1
+        current_state_name = get_state_name_from_value(self.states, self.current_state)
+        
+        print(f"\n--- Turn {self.conversation_turn} ---")
+        print(f"[Current State: {current_state_name}]\n")
+        
+        # Execute current state and get next state
+        self.current_state = execute_conversation_state(self, self.current_state, self.states)
+        
+        if self.current_state and not self.conversation_ended:
+            print("-" * 30)
  
 if __name__ == "__main__":
     system = RestaurantSystem()
