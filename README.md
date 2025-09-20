@@ -1,27 +1,4 @@
 # MAIR Assignment: Cambridge Restaurant Dialog System
-
-## Quick Start
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the dialog system
-python src/dialog_system.py
-```
-
-## Architecture
-
-```
-Dialog System Components:
-├── Dialog Controller (state_transition.py) - Main system orchestrator
-├── Conversation States (conversation_states.py) - State implementations  
-├── Preference Extraction (preference_extraction.py) - NLP processing
-├── Restaurant Lookup (lookup.py) - Database interface
-├── ML Classification (ml_models.py) - Intent classification
-└── Utilities (utils.py) - Shared functionality
-```
-
 ## Installation
 
 ### Setup 
@@ -30,14 +7,8 @@ pip install -r requirements.txt
 
 # Run system
 python src/dialog_system.py
-```
+python src/classification_system.py
 
-## Usage
-
-### Basic Usage
-```bash
-python src/dialog_system.py
-```
 ## System Components
 
 ### Core Files and Their Purpose
@@ -45,7 +16,6 @@ python src/dialog_system.py
 #### Main Entry Points
 - **`src/dialog_system.py`** - Primary entry point for the dialog system
 - **`src/classification_system.py`** - ML classification system with evaluation
-- **`src/main.py`** - Original main entry point
 
 #### Core System Components
 - **`src/state_transition.py`** - Dialog controller and state management
