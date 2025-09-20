@@ -26,7 +26,7 @@ def read_data(path,dedup: bool = False):
 
     counts = Counter(dialogue_act)
 
-    print("Dialogue act distribution:")
+    #print("Dialogue act distribution:")
     #for act, count in counts.items():
      #   print(f"{act}: {count}")
     return dialogue_act, utterance
