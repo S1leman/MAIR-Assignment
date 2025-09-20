@@ -38,3 +38,23 @@ def split_and_save_dataset(dialogue_act, utterance, train_path, test_path, test_
             test_file.write(f"{act} {utter}\n")
 
     return train_acts, test_acts, train_utterances, test_utterances
+
+def load_data():
+    print("Loading data...")
+
+    # Original data
+    acts_orig, utterances_orig = read_data("data/dialog_acts.dat", deduplicate=False)
+    train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig = split_and_save_dataset(
+        acts_orig, utterances_orig, "data/train_orig.txt", "data/test_orig.txt"
+    )
+    
+    # Deduplicated data
+    acts_dedup, utterances_dedup = read_data("data/dialog_acts.dat", deduplicate=True)
+    train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup = split_and_save_dataset(
+        acts_dedup, utterances_dedup, "data/train_dedup.txt", "data/test_dedup.txt"
+    )
+    
+    return {
+        'orig': (train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig),
+        'dedup': (train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup)
+    }

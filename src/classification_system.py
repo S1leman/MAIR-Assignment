@@ -1,32 +1,9 @@
 import os
 from collections import Counter
-from utils import read_data, split_and_save_dataset
+from utils import read_data, split_and_save_dataset, load_data
 from baseline_models import majority_baseline_model, rules_baseline_model
 from ml_models import decision_tree_classifier, logistic_regression_classifier, mlp_classifier
 from evaluation import  full_evaluation
-
-def load_data():
-    print("Loading data...")
-
-    # Original data
-    acts_orig, utterances_orig = read_data("data/dialog_acts.dat", deduplicate=False)
-    train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig = split_and_save_dataset(
-        acts_orig, utterances_orig, "data/train_orig.txt", "data/test_orig.txt"
-    )
-    
-    # Deduplicated data
-    acts_dedup, utterances_dedup = read_data("data/dialog_acts.dat", deduplicate=True)
-    train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup = split_and_save_dataset(
-        acts_dedup, utterances_dedup, "data/train_dedup.txt", "data/test_dedup.txt"
-    )
-    
-    print(f"Original: {len(train_acts_orig)} train, {len(test_acts_orig)} test")
-    print(f"Deduplicated: {len(train_acts_dedup)} train, {len(test_acts_dedup)} test")
-    
-    return {
-        'orig': (train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig),
-        'dedup': (train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup)
-    }
 
 def train_all_models(data):
     print("\nTraining and evaluating models...")
