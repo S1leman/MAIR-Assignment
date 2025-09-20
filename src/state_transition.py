@@ -64,8 +64,14 @@ class RestaurantSystem:
     def parse_user_input(self, user_input: str, context_stage=None):
         old_prefs = self.user_requirements.copy()
         
+        # Check for restart command first
+        if user_input.lower().strip() in ['start over', 'start again', 'reset']:
+            print("[User requested restart - preferences reset]")
+            self.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+            return 'restart'
+        
         # Handle simple "any" responses based on context
-        if user_input.strip().lower() in ['any', 'anything', "doesn't matter", "dont care", "any will do", "i dont care"]:
+        if user_input.strip().lower() in ['any', 'anything', "doesn't matter", "dont care", "any will do", "i dont care", "any type", "any food"]:
             if context_stage == 'ASK_AREA':
                 self.user_requirements['area'] = 'dontcare'
                 print(f"[Extracted: {{'area': 'dontcare'}}]")
@@ -131,7 +137,10 @@ class RestaurantSystem:
         print(f"[Classified as: {user_intent}]")
         
         if user_intent in ['inform']:
-            self.parse_user_input(user_input.lower())
+            parse_result = self.parse_user_input(user_input.lower())
+            if parse_result == 'restart':
+                print(f"[State transition: WELCOME → WELCOME (restart)]")
+                return self.states['WELCOME']
         
         next_state = self.check_next_stage()
         print(f"[State transition: WELCOME → {list(self.states.keys())[list(self.states.values()).index(next_state)]}]")
@@ -148,7 +157,10 @@ class RestaurantSystem:
         print(f"[Classified as: {user_intent}]")
                 
         if user_intent in ['inform']:
-            self.parse_user_input(user_input.lower(), 'ASK_AREA')
+            parse_result = self.parse_user_input(user_input.lower(), 'ASK_AREA')
+            if parse_result == 'restart':
+                print(f"[State transition: ASK_AREA → WELCOME (restart)]")
+                return self.states['WELCOME']
         
         next_state = self.check_next_stage()
         print(f"[State transition: ASK_AREA → {list(self.states.keys())[list(self.states.values()).index(next_state)]}]")
@@ -165,7 +177,10 @@ class RestaurantSystem:
         print(f"[Classified as: {user_intent}]")
         
         if user_intent in ['inform']:
-            self.parse_user_input(user_input.lower(), 'ASK_PRICE')
+            parse_result = self.parse_user_input(user_input.lower(), 'ASK_PRICE')
+            if parse_result == 'restart':
+                print(f"[State transition: ASK_PRICE → WELCOME (restart)]")
+                return self.states['WELCOME']
         
         next_state = self.check_next_stage()
         print(f"[State transition: ASK_PRICE → {list(self.states.keys())[list(self.states.values()).index(next_state)]}]")
@@ -182,7 +197,10 @@ class RestaurantSystem:
         print(f"[Classified as: {user_intent}]")
         
         if user_intent in ['inform']:
-            self.parse_user_input(user_input.lower(), 'ASK_FOOD_TYPE')
+            parse_result = self.parse_user_input(user_input.lower(), 'ASK_FOOD_TYPE')
+            if parse_result == 'restart':
+                print(f"[State transition: ASK_FOOD_TYPE → WELCOME (restart)]")
+                return self.states['WELCOME']
         
         next_state = self.check_next_stage()
         print(f"[State transition: ASK_FOOD_TYPE → {list(self.states.keys())[list(self.states.values()).index(next_state)]}]")
@@ -260,9 +278,37 @@ class RestaurantSystem:
     def await_user_response(self):
         """Wait for user response and handle accordingly"""
         user_input = input("User: ").strip()
-        user_intent = self.classify_utterance(user_input)
         
+        # Don't process empty input
+        if not user_input:
+            return self.await_user_response()
+            
+        user_intent = self.classify_utterance(user_input)
         print(f"[Classified as: {user_intent}]")
+        
+        # Check for restart command first
+        if user_input.lower().strip() in ['start over', 'start again', 'reset']:
+            print("[User requested restart]")
+            print(f"[State transition: SUGGEST_RESTAURANT → WELCOME (restart)]")
+            self.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+            return self.states['WELCOME']
+        
+        # Check if user is asking for a different restaurant (new preferences)
+        input_lower = user_input.lower()
+        if any(keyword in input_lower for keyword in ['is there', 'do you have', 'find me', 'looking for', 'want', 'need']):
+            # This looks like a new search request - extract new preferences
+            print(f"[Detecting new restaurant search request...]")
+            new_prefs = self.preference_extractor.extract_preferences(user_input)
+            if any(new_prefs[key] not in [None, 'dontcare'] for key in new_prefs):
+                print(f"[New preferences detected: {new_prefs}]")
+                # Update requirements with new preferences
+                for key, value in new_prefs.items():
+                    if value and value != 'dontcare':
+                        self.user_requirements[key] = value
+                print(f"[Updated requirements: {self.user_requirements}]")
+                # Search with new criteria
+                print(f"[State transition: SUGGEST_RESTAURANT → ASK_AREA (new search)]")
+                return self.states['ASK_AREA']  # Let system re-confirm and search
         
         # Handle user response based on classified intent
         if user_intent == 'request':
@@ -296,13 +342,19 @@ class RestaurantSystem:
     
     # Stage 8: INFORM
     def inform(self):
-        print("System: I'm sorry, I don't have any more restaurants to suggest that match your criteria.")
         print("System: Would you like to try a different type of food or change your preferences?")
         
         user_input = input("User: ").strip()
         user_intent = self.classify_utterance(user_input)
         
         print(f"[Classified as: {user_intent}]")
+        
+        # Check for restart command
+        if user_input.lower().strip() in ['start over', 'start again', 'reset']:
+            print("[User requested restart]")
+            print(f"[State transition: INFORM → WELCOME (restart)]")
+            self.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+            return self.states['WELCOME']
         
         if user_intent in ['affirm', 'inform']:
             # User wants to search for restaurants again
@@ -408,9 +460,9 @@ class RestaurantSystem:
             if len(info_parts) == 1:
                 print(f"System: {info_parts[0]}.")
             elif len(info_parts) == 2:
-                print(f"System: {info_parts[0]} and {info_parts[1]}.")
+                print(f"System: {info_parts[0]} and {info_parts[1].lower()}.")
             else:
-                print(f"System: {', '.join(info_parts[:-1])}, and {info_parts[-1]}.")
+                print(f"System: {info_parts[0]}, {info_parts[1].lower()}, and {info_parts[2].lower()}.")
         else:
             # Default: provide all available information if no specific request
             response_parts = []

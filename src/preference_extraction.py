@@ -10,7 +10,8 @@ class PreferenceExtractor:
             'thai', 'vietnamese', 'european', 'mediterranean', 'seafood',
             'bistro', 'asian oriental', 'gastropub', 'portuguese', 'american',
             'japanese', 'mexican', 'spanish', 'danish', 'polish', 'korean',
-            'greek', 'turkish', 'lebanese', 'moroccan', 'ethiopian', 'russian'
+            'greek', 'turkish', 'lebanese', 'moroccan', 'ethiopian', 'russian',
+            'vegetarian', 'vegan', 'healthy', 'organic'
         ]
          
         self.areas = [
@@ -72,17 +73,7 @@ class PreferenceExtractor:
         return preferences
     
     def _extract_food_preference(self, utterance: str) -> Optional[str]: 
-        # Check for food-specific dontcare expressions
-        food_dontcare = ['any food', 'any type of food', 'any cuisine', 'doesnt matter what food', 
-                        "doesn't matter what food", 'whatever food', 'anything to eat']
-        if any(expr in utterance for expr in food_dontcare):
-            return 'dontcare'
-            
-        # Check for general dontcare only if no specific context is present
-        general_dontcare = ['dont care', "don't care", 'doesnt matter', "doesn't matter", 'whatever', 'anything']
-        if any(expr in utterance for expr in general_dontcare) and 'food' in utterance:
-            return 'dontcare'
-            
+        # First check for specific food mentions - prioritize this
         for pattern in self.food_patterns:
             matches = re.findall(pattern, utterance, re.IGNORECASE)
             for match in matches:
@@ -90,11 +81,23 @@ class PreferenceExtractor:
                 if food_type:
                     return food_type
          
+        # Check individual words for food types
         words = utterance.split()
         for word in words:
             food_type = self._fuzzy_match_food(word)
             if food_type:
                 return food_type
+        
+        # Check for food-specific dontcare expressions
+        food_dontcare = ['any food', 'any type of food', 'any cuisine', 'doesnt matter what food', 
+                        "doesn't matter what food", 'whatever food', 'anything to eat']
+        if any(expr in utterance for expr in food_dontcare):
+            return 'dontcare'
+            
+        # Check for general dontcare BUT only if the utterance contains "food" and no specific food type was found
+        general_dontcare = ['dont care', "don't care", 'doesnt matter', "doesn't matter", 'whatever', 'anything']
+        if 'food' in utterance and any(expr in utterance for expr in general_dontcare):
+            return 'dontcare'
         
         return None
     
