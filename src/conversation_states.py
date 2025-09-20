@@ -1,8 +1,7 @@
-class ConversationStates:
-    """Handles all conversation state implementations"""
+class ConversationStates: 
     
     def __init__(self, system):
-        self.system = system  # Reference to main RestaurantSystem
+        self.system = system 
     
     # Stage 1: WELCOME
     def welcome(self):

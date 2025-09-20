@@ -5,15 +5,12 @@ from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
 
 class RestaurantSystem:
-    def __init__(self):
-        # Initialize conversation states handler
+    def __init__(self): 
         self.conversation_states = ConversationStates(self)
-        
-        # Restaurant lookup
+         
         self.restaurant_lookup = RestaurantLookup("data/restaurant_info.csv")
         self.preference_extractor = PreferenceExtractor()
-        
-        # State definitions
+         
         self.states = {
             'WELCOME': 'welcome',                    # Stage 1
             'ASK_AREA': 'ask_area',                 # Stage 2
@@ -27,8 +24,7 @@ class RestaurantSystem:
         }
         
         self.current_state = self.states['WELCOME']
-        
-        # User preferences
+         
         self.user_requirements = {
             'area': None,      
             'pricerange': None,  
@@ -50,8 +46,7 @@ class RestaurantSystem:
         
         self.conversation_turn = 0
     
-    def train_classifier(self):
-        """Train the ML classifier for intent recognition"""
+    def train_classifier(self): 
         data = load_data()
         train_acts, test_acts, train_utterances, test_utterances = data['orig']
 
@@ -63,8 +58,7 @@ class RestaurantSystem:
         print("MLP classifier trained successfully")
         return True
            
-    def classify_utterance(self, user_utterance):
-        """Classify user intent using trained ML model"""
+    def classify_utterance(self, user_utterance): 
         user_utterance = user_utterance.lower()
         X_input = self.mlp_vectorizer.transform([user_utterance])
         prediction_int = self.mlp_model.predict(X_input)[0]
@@ -132,8 +126,7 @@ class RestaurantSystem:
         if self.user_requirements != old_prefs:
             print(f"[Preferences updated: {self.user_requirements}]")
 
-    def check_next_stage(self):
-        """Determine what stage to go to next based on collected preferences"""
+    def check_next_stage(self): 
         if not self.user_requirements['area']:
             return self.states['ASK_AREA']
         elif not self.user_requirements['pricerange']:
@@ -143,8 +136,7 @@ class RestaurantSystem:
         else:
             return self.states['CONFIRM']
     
-    def search_restaurants(self):
-        """Search for restaurants matching user requirements"""
+    def search_restaurants(self): 
         filters = {
             "food": self.user_requirements['food'] or "dontcare",
             "pricerange": self.user_requirements['pricerange'] or "dontcare", 
@@ -169,8 +161,7 @@ class RestaurantSystem:
             self.current_restaurant = None
             self.alternatives = []
     
-    def provide_restaurant_info(self, user_input: str):
-        """Generate restaurant information response based on user request"""
+    def provide_restaurant_info(self, user_input: str): 
         if not self.current_restaurant:
             print("System: I'm sorry, I don't have any restaurant information available to provide details.")
             return self.states['INFORM']
@@ -238,8 +229,7 @@ class RestaurantSystem:
         
         return 'await_next_request'
     
-    def try_alternative(self):
-        """Try to get next alternative restaurant"""
+    def try_alternative(self): 
         if self.alternatives and self.suggestion_index < len(self.alternatives):
             alt_restaurant_dict = self.alternatives[self.suggestion_index]
             self.current_restaurant = alt_restaurant_dict
@@ -250,8 +240,7 @@ class RestaurantSystem:
             print("I'm sorry, I don't have any more alternatives to suggest.")
             return self.states['INFORM']
     
-    def run_conversation(self):
-        """Main conversation loop"""
+    def run_conversation(self): 
         print("=" * 60)
         print("CAMBRIDGE RESTAURANT SYSTEM DIALOG")
         print("=" * 60)
