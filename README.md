@@ -1,73 +1,42 @@
-# Dialog Act Classification System
+# MAIR Assignment: Cambridge Restaurant Dialog System
+## Installation
 
-## File Overview
+### Setup 
+# Install dependencies
+pip install -r requirements.txt
 
-### `main.py`
-- **Purpose:** Main entry point for the system.
-- **Description:** Loads and splits data, trains all models, evaluates results, and provides an interactive command-line interface for classifying new utterances.
+# Run system
+python src/dialog_system.py
+python src/classification_system.py
 
-### `utils.py`
-- **Purpose:** Data utilities.
-- **Description:** Functions for reading dialog act data, deduplication, and splitting/saving train/test datasets.
+## System Components
 
-### `baseline_models.py`
-- **Purpose:** Baseline classifiers.
-- **Description:** Implements a majority class baseline and a keyword-based rules baseline.
+### Core Files and Their Purpose
 
-### `ml_models.py`
-- **Purpose:** Machine learning classifiers.
-- **Description:** Implements Decision Tree, Logistic Regression, and Multi-layer Perceptron (MLP) classifiers using bag-of-words features.
+#### Main Entry Points
+- **`src/dialog_system.py`** - Primary entry point for the dialog system
+- **`src/classification_system.py`** - ML classification system with evaluation
 
-### `evaluation.py`
-- **Purpose:** Evaluation and analysis.
-- **Description:** Functions for printing accuracy, precision, recall, F1-score, misclassification summaries, model comparisons, and deduplication impact.
+#### Core System Components
+- **`src/state_transition.py`** - Dialog controller and state management
+- **`src/conversation_states.py`** - Individual dialog state implementations
+- **`src/preference_extraction.py`** - Natural language processing and preference extraction
+- **`src/lookup.py`** - Restaurant database interface
+- **`src/ml_models.py`** - Machine learning model implementations
+- **`src/utils.py`** - Utility functions and shared functionality
 
----
+#### Supporting Components
+- **`src/baseline_models.py`** - Baseline classification models
+- **`src/evaluation.py`** - Model evaluation and metrics 
 
-## How to Run
+### Dialog States
+1. **WELCOME** - Initial greeting and preference collection
+2. **ASK_AREA** - Area preference collection
+3. **ASK_PRICE** - Price range preference collection
+4. **ASK_FOOD_TYPE** - Food type preference collection
+5. **CONFIRM** - Preference confirmation
+6. **APOLOGIZE** - Error recovery
+7. **SUGGEST_RESTAURANT** - Restaurant presentation
+8. **INFORM** - Additional options and recovery
+9. **GOODBYE** - Conversation termination
 
-1. **Install Requirements**
-   ```bash
-   pip install scikit-learn tensorflow numpy
-   ```
-
-2. **Prepare Data**
-   - Place dialog act data file at `data/dialog_acts.dat`.
-
-3. **Run the Program**
-   ```bash
-   python src/main.py
-   ```
-   - The program will load data, train models, print evaluation metrics, and start an interactive prompt.
-
-4. **Interactive Mode**
-   - Follow prompts to select dataset and model.
-   - Enter utterances to see predicted dialog acts.
-   - Type `back` to change model/dataset, or `exit`,`quit` to quit.
-
----
-
-## Directory Structure
-
-```
-MAIR-Assignment/
-├── data/
-│   └── dialog_acts.dat
-├── src/
-│   ├── main.py
-│   ├── utils.py
-│   ├── baseline_models.py
-│   ├── ml_models.py
-│   └── evaluation.py
-└── README.md
-```
-
----
-
-## Notes
-
-- Supports both original and deduplicated datasets.
-- Evaluation includes per-class and overall metrics.
-- Interactive mode allows manual testing of models.
-
----
