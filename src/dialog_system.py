@@ -1,11 +1,6 @@
 from state_transition import RestaurantSystem
 
 def main():
-    print("=" * 70)
-    print("Cambridge Restaurant System")
-    print("=" * 70)
-    print()
-    
     print("Initializing the System...")
     system = RestaurantSystem()
     
@@ -16,7 +11,6 @@ def main():
     
     print()
     print("(Use Ctrl+C to exit)")
-    print()
     
     try:
         system.run_conversation()
