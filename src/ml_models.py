@@ -6,7 +6,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.ensemble import GradientBoostingClassifier
 
-def gradient_boosting_classifier(train_acts, train_utterances, test_utterances, return_model=False): 
+def gradient_boosting_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     vectorizer = CountVectorizer()
     X_train = vectorizer.fit_transform(train_utterances)    
     X_test = vectorizer.transform(test_utterances) 
@@ -17,7 +17,7 @@ def gradient_boosting_classifier(train_acts, train_utterances, test_utterances, 
         return clf, vectorizer
     return y_pred
 
-def decision_tree_classifier(train_acts, train_utterances, test_utterances, return_model=False):
+def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False):
     vectorizer = CountVectorizer(ngram_range=(1,5)) #not really necessary to use bigrams here
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
