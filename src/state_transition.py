@@ -1,9 +1,9 @@
 from ml_models import mlp_classifier
 from lookup import RestaurantLookup
-from utils import (load_data, format_restaurant_info_response, format_restaurant_suggestion, 
+from utils import (load_data, format_restaurant_info_response, 
                    detect_restart_command, get_state_name_from_value, is_dontcare_response,
                    handle_dontcare_preference, update_preferences_with_context, log_preference_changes,
-                   execute_conversation_state)
+                   execute_conversation_state, train_classifier, load_trained_model)
 from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
 
@@ -39,6 +39,12 @@ class RestaurantSystem:
         self.mlp_vectorizer = None
         self.mlp_label_encoder = None
         self.is_trained = False
+        self.model_path = "models/"  # Directory to save models
+        self.model_files = {
+            'model': 'mlp_model.pkl',
+            'vectorizer': 'mlp_vectorizer.pkl', 
+            'label_encoder': 'mlp_label_encoder.pkl'
+        }
         
         # Restaurant tracking
         self.current_restaurant = None
@@ -49,17 +55,15 @@ class RestaurantSystem:
         
         self.conversation_turn = 0
     
-    def train_classifier(self): 
-        data = load_data()
-        train_acts, test_acts, train_utterances, test_utterances = data['orig']
-
-        self.mlp_model, self.mlp_vectorizer, self.mlp_label_encoder = mlp_classifier(
-                train_acts, test_acts, train_utterances, test_utterances, return_model=True
-            )
+    def ensure_model_ready(self):
+        if self.is_trained:
+            return True
+        
+        if load_trained_model(self):
+            return True
             
-        self.is_trained = True
-        print("MLP classifier trained successfully")
-        return True
+        print("No pre-trained model available. Training new model...")
+        return train_classifier(self)
            
     def classify_utterance(self, user_utterance): 
         user_utterance = user_utterance.lower()
@@ -188,5 +192,5 @@ class RestaurantSystem:
  
 if __name__ == "__main__":
     system = RestaurantSystem()
-    system.train_classifier()
+    system.ensure_model_ready()  # This will load existing model or train new one
     system.run_conversation()

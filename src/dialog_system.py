@@ -4,8 +4,7 @@ def main():
     print("Initializing the System...")
     system = RestaurantSystem()
     
-    print("Training MLP classifier...")
-    system.train_classifier()
+    system.ensure_model_ready()
        
     num_restaurants = len(system.restaurant_lookup.df)
     
