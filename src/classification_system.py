@@ -2,7 +2,7 @@ import os
 from collections import Counter
 from utils import read_data, split_and_save_dataset, load_data
 from baseline_models import majority_baseline_model, rules_baseline_model
-from ml_models import decision_tree_classifier, logistic_regression_classifier, mlp_classifier
+from ml_models import decision_tree_classifier, logistic_regression_classifier, mlp_classifier, gradient_boosting_classifier
 from evaluation import  full_evaluation
 
 def train_all_models(data):
@@ -22,11 +22,14 @@ def train_all_models(data):
         train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig, return_model=True)
     mlp_model_orig, mlp_vectorizer_orig, mlp_le_orig = mlp_classifier(
         train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig, return_model=True)
+    gb_model_orig, gb_vectorizer_orig = gradient_boosting_classifier(
+        train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig, return_model=True)
 
     dt_pred_orig = dt_model_orig.predict(dt_vectorizer_orig.transform(test_utts_orig))
     lr_pred_orig = lr_model_orig.predict(lr_vectorizer_orig.transform(test_utts_orig))
     mlp_pred_orig_int = mlp_model_orig.predict(mlp_vectorizer_orig.transform(test_utts_orig).toarray())
     mlp_pred_orig = mlp_le_orig.inverse_transform(mlp_pred_orig_int)
+    gb_pred_orig = gb_model_orig.predict(gb_vectorizer_orig.transform(test_utts_orig))
 
     dt_model_dedup, dt_vectorizer_dedup = decision_tree_classifier(
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
@@ -34,11 +37,14 @@ def train_all_models(data):
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
     mlp_model_dedup, mlp_vectorizer_dedup, mlp_le_dedup = mlp_classifier(
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
+    gb_model_dedup, gb_vectorizer_dedup = gradient_boosting_classifier(
+        train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
 
     dt_pred_dedup = dt_model_dedup.predict(dt_vectorizer_dedup.transform(test_utts_dedup))
     lr_pred_dedup = lr_model_dedup.predict(lr_vectorizer_dedup.transform(test_utts_dedup))
     mlp_pred_dedup_int = mlp_model_dedup.predict(mlp_vectorizer_dedup.transform(test_utts_dedup).toarray())
     mlp_pred_dedup = mlp_le_dedup.inverse_transform(mlp_pred_dedup_int)
+    gb_pred_dedup = gb_model_dedup.predict(gb_vectorizer_dedup.transform(test_utts_dedup))
     
     results = {
         "Majority Baseline (Original)": (test_acts_orig, maj_pred_orig),
@@ -46,18 +52,22 @@ def train_all_models(data):
         "Decision Tree (Original)": (test_acts_orig, dt_pred_orig),
         "Logistic Regression (Original)": (test_acts_orig, lr_pred_orig),
         "MLP (Original)": (test_acts_orig, mlp_pred_orig),
+        "Gradient Boosting (Original)": (test_acts_orig, gb_pred_orig),
         "Decision Tree (Deduplicated)": (test_acts_dedup, dt_pred_dedup),
         "Logistic Regression (Deduplicated)": (test_acts_dedup, lr_pred_dedup),
         "MLP (Deduplicated)": (test_acts_dedup, mlp_pred_dedup),
+        "Gradient Boosting (Deduplicated)": (test_acts_dedup, gb_pred_dedup),
     }
 
     models = {
         "dt_model_orig": dt_model_orig, "dt_vectorizer_orig": dt_vectorizer_orig,
         "lr_model_orig": lr_model_orig, "lr_vectorizer_orig": lr_vectorizer_orig,
         "mlp_model_orig": mlp_model_orig, "mlp_vectorizer_orig": mlp_vectorizer_orig, "mlp_le_orig": mlp_le_orig,
+        "gb_model_orig": gb_model_orig, "gb_vectorizer_orig": gb_vectorizer_orig,
         "dt_model_dedup": dt_model_dedup, "dt_vectorizer_dedup": dt_vectorizer_dedup,
         "lr_model_dedup": lr_model_dedup, "lr_vectorizer_dedup": lr_vectorizer_dedup,
-        "mlp_model_dedup": mlp_model_dedup, "mlp_vectorizer_dedup": mlp_vectorizer_dedup, "mlp_le_dedup": mlp_le_dedup
+        "mlp_model_dedup": mlp_model_dedup, "mlp_vectorizer_dedup": mlp_vectorizer_dedup, "mlp_le_dedup": mlp_le_dedup,
+        "gb_model_dedup": gb_model_dedup, "gb_vectorizer_dedup": gb_vectorizer_dedup
     }
 
     return  results, models
@@ -84,18 +94,20 @@ def choose_dataset_and_model():
                 print("3. Decision Tree")
                 print("4. Logistic Regression")
                 print("5. MLP")
-                print("6. Back to dataset choice")
-                valid_choices = ["1", "2", "3", "4", "5", "6"]
+                print("6. Gradient Boosting")
+                print("7. Back to dataset choice")
+                valid_choices = ["1", "2", "3", "4", "5", "6", "7"]
             else:
                 print(f"\nAvailable classifiers for Deduplicated data:")
                 print("1. Decision Tree")
                 print("2. Logistic Regression")
                 print("3. MLP")
-                print("4. Back to dataset choice")
-                valid_choices = ["1", "2", "3", "4"]
+                print("4. Gradient Boosting")
+                print("5. Back to dataset choice")
+                valid_choices = ["1", "2", "3", "4", "5"]
 
             choice = input("\nSelect classifier: ").strip()
-            if (suffix == "orig" and choice == "6") or (suffix == "dedup" and choice == "4"):
+            if (suffix == "orig" and choice == "7") or (suffix == "dedup" and choice == "5"):
                 break
             if choice not in valid_choices:
                 print("Invalid choice.")
@@ -117,11 +129,11 @@ def interactive_classification(models):
         if suffix == "orig":
             model_names = {
                 "1": "Majority", "2": "Rules", "3": "Decision Tree",
-                "4": "Logistic Regression", "5": "MLP"
+                "4": "Logistic Regression", "5": "MLP", "6": "Gradient Boosting"
             }
         else:
             model_names = {
-                "1": "Decision Tree", "2": "Logistic Regression", "3": "MLP"
+                "1": "Decision Tree", "2": "Logistic Regression", "3": "MLP", "4": "Gradient Boosting"
             }
 
         print(f"\nUsing: {model_names[choice]}")
@@ -152,6 +164,9 @@ def interactive_classification(models):
                         X = models['mlp_vectorizer_orig'].transform([utterance]).toarray()
                         pred_int = models['mlp_model_orig'].predict(X).argmax(axis=1)[0]
                         prediction = models['mlp_le_orig'].inverse_transform([pred_int])[0]
+                    elif choice == "6":
+                        X = models['gb_vectorizer_orig'].transform([utterance])
+                        prediction = models['gb_model_orig'].predict(X)[0]
                 else:
                     if choice == "1":
                         X = models['dt_vectorizer_dedup'].transform([utterance])
@@ -163,6 +178,9 @@ def interactive_classification(models):
                         X = models['mlp_vectorizer_dedup'].transform([utterance]).toarray()
                         pred_int = models['mlp_model_dedup'].predict(X).argmax(axis=1)[0]
                         prediction = models['mlp_le_dedup'].inverse_transform([pred_int])[0]
+                    elif choice == "4":
+                        X = models['gb_vectorizer_dedup'].transform([utterance])
+                        prediction = models['gb_model_dedup'].predict(X)[0]
                 print(f"Predicted: {prediction}")
             except Exception as e:
                 print(f"Error: {e}")

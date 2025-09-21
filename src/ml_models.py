@@ -4,14 +4,24 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neural_network import MLPClassifier
 from sklearn.utils.class_weight import compute_sample_weight
+from sklearn.ensemble import GradientBoostingClassifier
 
-#TO-DO: TUNE HYPERPARAMETERS
+def gradient_boosting_classifier(train_acts, train_utterances, test_utterances, return_model=False): 
+    vectorizer = CountVectorizer()
+    X_train = vectorizer.fit_transform(train_utterances)    
+    X_test = vectorizer.transform(test_utterances) 
+    clf = GradientBoostingClassifier(n_estimators=250, ccp_alpha=1e-10,random_state=42)
+    clf.fit(X_train, train_acts)
+    y_pred = clf.predict(X_test)
+    if return_model:
+        return clf, vectorizer
+    return y_pred
 
-def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
-    vectorizer = CountVectorizer(ngram_range=(1,2))
+def decision_tree_classifier(train_acts, train_utterances, test_utterances, return_model=False):
+    vectorizer = CountVectorizer(ngram_range=(1,5)) #not really necessary to use bigrams here
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
-    clf = DecisionTreeClassifier(max_depth=20, min_samples_split=5, class_weight='balanced', random_state=42)
+    clf = DecisionTreeClassifier(ccp_alpha=1e-5,class_weight="balanced",random_state=42).fit(X_train, train_acts)
     clf.fit(X_train, train_acts)  
     y_pred = clf.predict(X_test)
     if return_model:
