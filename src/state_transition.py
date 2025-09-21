@@ -4,7 +4,7 @@ from utils import (load_data, format_restaurant_info_response,
                    detect_restart_command, get_state_name_from_value, is_dontcare_response,
                    handle_dontcare_preference, update_preferences_with_context, log_preference_changes,
                    execute_conversation_state, train_classifier, load_trained_model)
-from feature_extraction_new import PreferenceExtractor
+from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
 
 class RestaurantSystem:

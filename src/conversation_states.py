@@ -1,5 +1,5 @@
 from utils import format_restaurant_suggestion, detect_restart_command, detect_new_search_request
-from feature_extraction_new import PreferenceExtractor
+from preference_extraction import PreferenceExtractor
 
 class ConversationStates: 
     
