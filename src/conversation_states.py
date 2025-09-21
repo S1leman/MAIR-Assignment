@@ -1,4 +1,5 @@
 from utils import format_restaurant_suggestion, detect_restart_command, detect_new_search_request
+from feature_extraction_new import PreferenceExtractor
 
 class ConversationStates: 
     
@@ -90,8 +91,8 @@ class ConversationStates:
         prefs = []
         if self.system.user_requirements['area'] and self.system.user_requirements['area'] != 'dontcare':
             prefs.append(f"in the {self.system.user_requirements['area']} of town")
-        if self.system.user_requirements['pricerange']:
-            prefs.append(f"in the {self.system.user_requirements['pricerange']} price range")
+        if self.system.user_requirements['price']:
+            prefs.append(f"in the {self.system.user_requirements['price']} price range")
         if self.system.user_requirements['food'] and self.system.user_requirements['food'] != 'dontcare':
             prefs.append(f"serving {self.system.user_requirements['food']} food")
         
@@ -131,7 +132,7 @@ class ConversationStates:
         print("I'm sorry for the confusion. Let me help you find what you're looking for.")
         
         # Reset preferences and start over
-        self.system.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+        self.system.user_requirements = {'area': None, 'price': None, 'food': None}
         return self.system.states['ASK_AREA']
     
     # Stage 7: SUGGEST_RESTAURANT
@@ -164,14 +165,14 @@ class ConversationStates:
         if detect_restart_command(user_input):
             print("[User requested restart]")
             print(f"[State transition: SUGGEST_RESTAURANT → WELCOME (restart)]")
-            self.system.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+            self.system.user_requirements = {'area': None, 'price': None, 'food': None}
             return self.system.states['WELCOME']
         
         # Check if user is asking for a different restaurant (new preferences)
         if detect_new_search_request(user_input):
             # This looks like a new search request - extract new preferences
             print(f"[Detecting new restaurant search request...]")
-            new_prefs = self.system.preference_extractor.extract_preferences(user_input)
+            new_prefs = PreferenceExtractor.extract_all(user_input)
             if any(new_prefs[key] not in [None, 'dontcare'] for key in new_prefs):
                 print(f"[New preferences detected: {new_prefs}]")
                 # Update requirements with new preferences
@@ -226,13 +227,13 @@ class ConversationStates:
         if detect_restart_command(user_input):
             print("[User requested restart]")
             print(f"[State transition: INFORM → WELCOME (restart)]")
-            self.system.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+            self.system.user_requirements = {'area': None, 'price': None, 'food': None}
             return self.system.states['WELCOME']
         
         if user_intent in ['affirm', 'inform']:
             # User wants to search for restaurants again
             print("[Restarting restaurant search...]")
-            self.system.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+            self.system.user_requirements = {'area': None, 'price': None, 'food': None}
             print(f"[State transition: INFORM → ASK_AREA]")
             return self.system.states['ASK_AREA']
         elif user_intent in ['bye', 'thankyou']:
