@@ -80,7 +80,7 @@ def format_restaurant_suggestion(restaurant):
 
 
 def detect_restart_command(user_input):
-    return user_input.lower().strip() in ['start over', 'start again', 'reset']
+    return user_input.lower().strip() in ['start over', 'start again', 'reset', 'restart']
 
 
 def detect_new_search_request(user_input):
@@ -97,11 +97,21 @@ def get_state_name_from_value(states_dict, state_value):
 
 
 def is_dontcare_response(user_input):
+    user_input = user_input.lower().strip()
+    dontcare_found = False
+
     dontcare_phrases = [
-        'any', 'anything', "doesn't matter", "dont care", 
+        'any', 'anything', "doesn't matter", "dont care", "don't care", "doesnt matter", "i dont mind", "i don't mind", "any part",
         "any will do", "i dont care", "any type", "any food"
     ]
-    return user_input.strip().lower() in dontcare_phrases
+
+    for phrase in dontcare_phrases:
+        if phrase in user_input:
+            dontcare_found = True
+            break
+    
+    
+    return dontcare_found
 
 
 def handle_dontcare_preference(user_requirements, context_stage, old_prefs):

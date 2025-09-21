@@ -4,7 +4,7 @@ from utils import (load_data, format_restaurant_info_response,
                    detect_restart_command, get_state_name_from_value, is_dontcare_response,
                    handle_dontcare_preference, update_preferences_with_context, log_preference_changes,
                    execute_conversation_state, train_classifier, load_trained_model)
-from feature_extraction_new import PreferenceExtractor
+from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
 
 class RestaurantSystem:
@@ -38,7 +38,7 @@ class RestaurantSystem:
         self.mlp_vectorizer = None
         self.mlp_label_encoder = None
         self.is_trained = False
-        self.model_path = "models/"  # Directory to save models
+        self.model_path = "models/"  # Directory of trained model
         self.model_files = {
             'model': 'mlp_model.pkl',
             'vectorizer': 'mlp_vectorizer.pkl', 
@@ -82,11 +82,12 @@ class RestaurantSystem:
         
         # Handle simple "don't care" responses based on context
         if is_dontcare_response(user_input):
-            handle_dontcare_preference(self.user_requirements, context_stage, old_prefs)
-            return
-        
-        # Extract preferences using new static method
+            if(handle_dontcare_preference(self.user_requirements, context_stage, old_prefs)):
+                return
+         
         extracted_prefs = PreferenceExtractor.extract_all(user_input)
+
+        print(f"[Extracted preferences: {extracted_prefs}]")    
         # Update user requirements based on context
         update_preferences_with_context(self.user_requirements, extracted_prefs, context_stage)
         
