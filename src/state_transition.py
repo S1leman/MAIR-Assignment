@@ -4,7 +4,7 @@ from utils import (load_data, format_restaurant_info_response,
                    detect_restart_command, get_state_name_from_value, is_dontcare_response,
                    handle_dontcare_preference, update_preferences_with_context, log_preference_changes,
                    execute_conversation_state, train_classifier, load_trained_model)
-from preference_extraction import PreferenceExtractor
+from feature_extraction_new import PreferenceExtractor
 from conversation_states import ConversationStates
 
 class RestaurantSystem:
@@ -12,7 +12,6 @@ class RestaurantSystem:
         self.conversation_states = ConversationStates(self)
          
         self.restaurant_lookup = RestaurantLookup("data/restaurant_info.csv")
-        self.preference_extractor = PreferenceExtractor()
          
         self.states = {
             'WELCOME': 'welcome',                    # Stage 1
@@ -30,7 +29,7 @@ class RestaurantSystem:
          
         self.user_requirements = {
             'area': None,      
-            'pricerange': None,  
+            'price': None, 
             'food': None         
         }
         
@@ -78,7 +77,7 @@ class RestaurantSystem:
         # Check for restart command first
         if detect_restart_command(user_input):
             print("[User requested restart - preferences reset]")
-            self.user_requirements = {'area': None, 'pricerange': None, 'food': None}
+            self.user_requirements = {'area': None, 'price': None, 'food': None}
             return 'restart'
         
         # Handle simple "don't care" responses based on context
@@ -86,20 +85,18 @@ class RestaurantSystem:
             handle_dontcare_preference(self.user_requirements, context_stage, old_prefs)
             return
         
-        # Extract and validate preferences 
-        extracted_prefs = self.preference_extractor.extract_preferences(user_input)
-        validated_prefs, errors = self.preference_extractor.validate_preferences(extracted_prefs)
-        
+        # Extract preferences using new static method
+        extracted_prefs = PreferenceExtractor.extract_all(user_input)
         # Update user requirements based on context
-        update_preferences_with_context(self.user_requirements, validated_prefs, context_stage)
+        update_preferences_with_context(self.user_requirements, extracted_prefs, context_stage)
         
         # Log all changes and results
-        log_preference_changes(validated_prefs, self.user_requirements, old_prefs, errors)
+        log_preference_changes(extracted_prefs, self.user_requirements, old_prefs, [])
 
     def check_next_stage(self): 
         if not self.user_requirements['area']:
             return self.states['ASK_AREA']
-        elif not self.user_requirements['pricerange']:
+        elif not self.user_requirements['price']:
             return self.states['ASK_PRICE']
         elif not self.user_requirements['food']:
             return self.states['ASK_FOOD_TYPE']
@@ -109,7 +106,7 @@ class RestaurantSystem:
     def search_restaurants(self): 
         filters = {
             "food": self.user_requirements['food'] or "dontcare",
-            "pricerange": self.user_requirements['pricerange'] or "dontcare", 
+            "pricerange": self.user_requirements['price'] or "dontcare",
             "area": self.user_requirements['area'] or "dontcare"
         }
         

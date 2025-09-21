@@ -109,8 +109,8 @@ def handle_dontcare_preference(user_requirements, context_stage, old_prefs):
         user_requirements['area'] = 'dontcare'
         print(f"[Extracted: {{'area': 'dontcare'}}]")
     elif context_stage == 'ASK_PRICE':
-        user_requirements['pricerange'] = 'dontcare'
-        print(f"[Extracted: {{'pricerange': 'dontcare'}}]")
+        user_requirements['price'] = 'dontcare'
+        print(f"[Extracted: {{'price': 'dontcare'}}]") 
     elif context_stage == 'ASK_FOOD_TYPE':
         user_requirements['food'] = 'dontcare'
         print(f"[Extracted: {{'food': 'dontcare'}}]")
@@ -126,7 +126,7 @@ def update_preferences_with_context(user_requirements, validated_prefs, context_
     if context_stage:
         stage_mapping = {
             'ASK_AREA': 'area',
-            'ASK_PRICE': 'pricerange', 
+            'ASK_PRICE': 'price',
             'ASK_FOOD_TYPE': 'food'
         }
         
