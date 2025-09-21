@@ -38,7 +38,7 @@ class RestaurantSystem:
         self.mlp_vectorizer = None
         self.mlp_label_encoder = None
         self.is_trained = False
-        self.model_path = "models/"  # Directory to save models
+        self.model_path = "models/"  # Directory of trained model
         self.model_files = {
             'model': 'mlp_model.pkl',
             'vectorizer': 'mlp_vectorizer.pkl', 
@@ -82,11 +82,12 @@ class RestaurantSystem:
         
         # Handle simple "don't care" responses based on context
         if is_dontcare_response(user_input):
-            handle_dontcare_preference(self.user_requirements, context_stage, old_prefs)
-            return
-        
-        # Extract preferences using new static method
+            if(handle_dontcare_preference(self.user_requirements, context_stage, old_prefs)):
+                return
+         
         extracted_prefs = PreferenceExtractor.extract_all(user_input)
+
+        print(f"[Extracted preferences: {extracted_prefs}]")    
         # Update user requirements based on context
         update_preferences_with_context(self.user_requirements, extracted_prefs, context_stage)
         

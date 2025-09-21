@@ -14,7 +14,7 @@ class PreferenceExtractor:
     'persian', 'jamaican', 'lebanese', 'cuban', 'japanese', 'catalan'
     ]
 
-    areas = ['west', 'north', 'south', 'centre', 'center']  
+    areas = ['west', 'north', 'south', 'centre', 'center', 'east']  
     price_ranges = ['cheap', 'moderate', 'expensive', 'moderately priced']
 
 
@@ -62,7 +62,12 @@ class PreferenceExtractor:
                 preference["food"] = closest
                 return preference
 
-        preference["food"] = None
+    
+        food_dontcare = ['any food', 'any type of food', 'any cuisine', 'doesnt matter what food', 
+                        "doesn't matter what food", 'whatever food', 'anything to eat']
+        if any(expr in utterance for expr in food_dontcare):
+            preference["food"] = 'dontcare'
+        
         return preference
 
     @staticmethod
@@ -76,7 +81,7 @@ class PreferenceExtractor:
                 preference["price"] = word
                 return preference
             if word == "moderately":
-                preference["price"] = "moderately priced"
+                preference["price"] = "moderate"
                 return preference
 
         patterns = [
@@ -95,8 +100,11 @@ class PreferenceExtractor:
             if closest:
                 preference["price"] = closest
                 return preference
+            
+        if any(expr in utterance for expr in ['any area', 'any part', 'anywhere']):
+            preference["area"] = 'dontcare'
+            return preference
 
-        preference["price"] = None
         return preference
 
     @staticmethod
@@ -130,12 +138,11 @@ class PreferenceExtractor:
                     preference["area"] = closest
                     return preference
 
-        preference["area"] = None
         return preference
 
     @staticmethod
     def extract_all(utterance):
-        preference = {"food": None, "price": None, "area": None}
+        preference = {}
         preference = PreferenceExtractor.food_extraction(utterance, preference)
         preference = PreferenceExtractor.price_extraction(utterance, preference)
         preference = PreferenceExtractor.area_extraction(utterance, preference)
