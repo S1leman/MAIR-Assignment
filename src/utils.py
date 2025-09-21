@@ -1,4 +1,8 @@
 from sklearn.model_selection import train_test_split
+import os
+import pickle
+from ml_models import mlp_classifier
+
 
 def format_restaurant_info_response(restaurant, user_input):
     if not restaurant:
@@ -231,3 +235,63 @@ def load_data():
         'orig': (train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig),
         'dedup': (train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup)
     }
+
+def load_trained_model(system_instance):
+    model_path = system_instance.model_path
+    model_files = system_instance.model_files
+        
+    os.makedirs(model_path, exist_ok=True)
+            
+    model_file = os.path.join(model_path, model_files['model'])
+    vectorizer_file = os.path.join(model_path, model_files['vectorizer'])
+    encoder_file = os.path.join(model_path, model_files['label_encoder'])
+                
+    if all(os.path.exists(f) for f in [model_file, vectorizer_file, encoder_file]):
+        with open(model_file, 'rb') as f:
+            system_instance.mlp_model = pickle.load(f)
+        with open(vectorizer_file, 'rb') as f:
+            system_instance.mlp_vectorizer = pickle.load(f)
+        with open(encoder_file, 'rb') as f:
+            system_instance.mlp_label_encoder = pickle.load(f)
+                    
+        system_instance.is_trained = True
+        print("Pre-trained MLP model loaded successfully from disk")
+        return True
+    else:
+        print("No pre-trained model found. Will need to train new model.")
+        return False
+                
+def save_trained_model(system_instance):
+    model_path = system_instance.model_path
+    model_files = system_instance.model_files
+        
+    os.makedirs(model_path, exist_ok=True)
+        
+    model_file = os.path.join(model_path, model_files['model'])
+    vectorizer_file = os.path.join(model_path, model_files['vectorizer'])
+    encoder_file = os.path.join(model_path, model_files['label_encoder'])
+        
+    with open(model_file, 'wb') as f:
+        pickle.dump(system_instance.mlp_model, f)
+    with open(vectorizer_file, 'wb') as f:
+        pickle.dump(system_instance.mlp_vectorizer, f)
+    with open(encoder_file, 'wb') as f:
+        pickle.dump(system_instance.mlp_label_encoder, f)
+        
+    print(f"Model saved successfully to {model_path}")
+    return True
+
+
+def train_classifier(system_instance):
+    data = load_data()
+    train_acts, test_acts, train_utterances, test_utterances = data['orig']
+
+    system_instance.mlp_model, system_instance.mlp_vectorizer, system_instance.mlp_label_encoder = mlp_classifier(
+        train_acts, test_acts, train_utterances, test_utterances, return_model=True
+    )
+        
+    system_instance.is_trained = True
+    print("MLP classifier trained successfully")
+    
+    save_trained_model(system_instance)
+    return True
