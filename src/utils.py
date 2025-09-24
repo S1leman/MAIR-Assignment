@@ -3,6 +3,22 @@ import os
 import pickle
 from ml_models import mlp_classifier
 
+import numpy as np
+import pandas as pd
+
+def build_restaurant_info(csv_in="data/restaurant_info.csv",csv_out="data/restaurant_info_updated.csv"):
+    """
+    Add food_quality, crowdedness, and length_stay to the restaurant_info CSV and save the updated file.
+    """
+    np.random.seed(42)
+    df = pd.read_csv(csv_in)
+
+    df["food_quality"] = np.where(np.random.randint(0, 2, df.shape[0]) == 1, "good", "bad")
+    df["crowdedness"] = np.where(np.random.randint(0, 2, df.shape[0]) == 1, "busy", "not busy")
+    df["length_stay"]  = np.where(np.random.randint(0, 2, df.shape[0]) == 1, "long", "short")
+
+    df.to_csv(csv_out, index=False)
+    return csv_out
 
 def format_restaurant_info_response(restaurant, user_input):
     if not restaurant:
