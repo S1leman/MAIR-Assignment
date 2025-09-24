@@ -2,11 +2,12 @@
 ## Installation
 
 ### Setup 
-# Install dependencies
+#### Install dependencies
 pip install -r requirements.txt
 
-# Run system
+### Run system
 python src/dialog_system.py
+
 python src/classification_system.py
 
 ## System Components
