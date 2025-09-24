@@ -44,8 +44,7 @@ python src/classification_system.py
 
 ### Example Dialogs
 #### Example 1
-System: Hello, welcome to the Cambridge restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?
-
+System: Hello, welcome to the Cambridge restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?  
 User: i want to eat italian
 
 System: What part of town do you have in mind?
