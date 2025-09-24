@@ -1,8 +1,7 @@
 from ml_models import mlp_classifier
 from lookup import RestaurantLookup
 from utils import (load_data, format_restaurant_info_response, 
-                   detect_restart_command, get_state_name_from_value, is_dontcare_response,
-                   handle_dontcare_preference, update_preferences_with_context, log_preference_changes,
+                   detect_restart_command, get_state_name_from_value, update_preferences_with_context, log_preference_changes,
                    execute_conversation_state, train_classifier, load_trained_model)
 from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
@@ -80,11 +79,6 @@ class RestaurantSystem:
             self.user_requirements = {'area': None, 'price': None, 'food': None}
             return 'restart'
         
-        # Handle simple "don't care" responses based on context
-        if is_dontcare_response(user_input):
-            if(handle_dontcare_preference(self.user_requirements, context_stage, old_prefs)):
-                return
-         
         extracted_prefs = PreferenceExtractor.extract_all(user_input)
 
         print(f"[Extracted preferences: {extracted_prefs}]")    

@@ -67,6 +67,7 @@ class PreferenceExtractor:
                         "doesn't matter what food", 'whatever food', 'anything to eat']
         if any(expr in utterance for expr in food_dontcare):
             preference["food"] = 'dontcare'
+            return preference
         
         return preference
 
@@ -101,10 +102,14 @@ class PreferenceExtractor:
                 preference["price"] = closest
                 return preference
             
-        if any(expr in utterance for expr in ['any area', 'any part', 'anywhere']):
-            preference["area"] = 'dontcare'
+        price_dontcare = ['any price', 'any price range', 'any budget', 'whatever price', 
+                         'any cost', 'doesnt matter how much', "doesn't matter how much",
+                         "doesn't matter what it costs", "doesnt matter what it costs",
+                         'whatever it costs', 'any amount']
+        if any(expr in utterance for expr in price_dontcare):
+            preference["price"] = 'dontcare'
             return preference
-
+        
         return preference
 
     @staticmethod
@@ -137,7 +142,10 @@ class PreferenceExtractor:
                 if closest:
                     preference["area"] = closest
                     return preference
-
+        if any(expr in utterance for expr in ['any area', 'any part', 'anywhere']):
+            preference["area"] = 'dontcare'
+            return preference
+        
         return preference
 
     @staticmethod

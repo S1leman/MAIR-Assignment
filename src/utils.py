@@ -95,43 +95,6 @@ def get_state_name_from_value(states_dict, state_value):
             return name
     return None
 
-
-def is_dontcare_response(user_input):
-    user_input = user_input.lower().strip()
-    dontcare_found = False
-
-    dontcare_phrases = [
-        'any', 'anything', "doesn't matter", "dont care", "don't care", "doesnt matter", "i dont mind", "i don't mind", "any part",
-        "any will do", "i dont care", "any type", "any food"
-    ]
-
-    for phrase in dontcare_phrases:
-        if phrase in user_input:
-            dontcare_found = True
-            break
-    
-    
-    return dontcare_found
-
-
-def handle_dontcare_preference(user_requirements, context_stage, old_prefs):
-    if context_stage == 'ASK_AREA':
-        user_requirements['area'] = 'dontcare'
-        print(f"[Extracted: {{'area': 'dontcare'}}]")
-    elif context_stage == 'ASK_PRICE':
-        user_requirements['price'] = 'dontcare'
-        print(f"[Extracted: {{'price': 'dontcare'}}]") 
-    elif context_stage == 'ASK_FOOD_TYPE':
-        user_requirements['food'] = 'dontcare'
-        print(f"[Extracted: {{'food': 'dontcare'}}]")
-    else:
-        return False
-    
-    if user_requirements != old_prefs:
-        print(f"[Preferences updated: {user_requirements}]")
-    return True
-
-
 def update_preferences_with_context(user_requirements, validated_prefs, context_stage):
     if context_stage:
         stage_mapping = {
