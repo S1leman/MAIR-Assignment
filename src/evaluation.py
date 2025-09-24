@@ -4,6 +4,17 @@ from collections import Counter, defaultdict
 import matplotlib.pyplot as plt
 
 def print_misclassifications(y_true, y_pred, utterances, model_name="Model", dataset_name="Dataset"):
+    """
+    Print all misclassified utterances along with their predicted and actual labels.
+    Takes as input:
+        y_true: Ground truth labels.
+        y_pred: Predicted labels .
+        utterances: Original utterances corresponding to predictions.
+        model_name: Name of the model.
+        dataset_name: Name of the dataset.
+    Prints each misclassified utterance with predicted vs actual label.
+    Counts and displays the total number of misclassifications.
+    """
     print(f"\n-- Misclassifications for {model_name} on {dataset_name} --")
     errors = 0
     for actual, pred, utt in zip(y_true, y_pred, utterances):
@@ -17,6 +28,11 @@ def print_misclassifications(y_true, y_pred, utterances, model_name="Model", dat
     print(f"Total misclassifications: {errors}")
 
 def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_name="Dataset"):
+    """
+    Summarize misclassification patterns by showing how often each true label was confused with other labels.
+    Counts misclassifications grouped by (actual -> predicted).
+    Prints a summary showing how many times each true class was confused with specific predicted classes.
+    """
     print(f"\n-- Misclassification Summary for {model_name} on {dataset_name} --")
     errors = defaultdict(Counter)
 
@@ -33,6 +49,9 @@ def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_nam
         print(f"For dialogue act '{actual_act}' it was misclassified {sum(preds.values())} times: {details}")
 
 def plot_confusion_matrix(y_true, y_pred, labels, model_name):
+    """
+    Plots a labeled confusion matrix for a model's predictions.
+    """    
     cm = confusion_matrix(y_true, y_pred, labels=labels)
     fig, ax = plt.subplots(figsize=(8, 6))
     im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
@@ -56,6 +75,14 @@ def plot_confusion_matrix(y_true, y_pred, labels, model_name):
     plt.show()
 
 def print_detailed_metrics(y_true, y_pred, model_name):
+    """
+    Print detailed evaluation metrics for a classification model:
+      - Accuracy
+      - Per-class precision, recall, F1-score, and support
+      - Macro and weighted averages
+      - Confusion matrix plot
+    """
+    #Define the set of valid dialog acts (used to fix class order)
     VALID_ACTS = [
         "ack", "affirm", "bye", "confirm", "deny", "hello", "inform", "negate",
         "null", "repeat", "reqalts", "reqmore", "request", "restart", "thankyou"
@@ -64,11 +91,13 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     print(f"EVALUATION: {model_name}")
     print(f"{'='*60}")
     
+    #Overall accuracy
     accuracy = accuracy_score(y_true, y_pred)
     print(f"Accuracy: {accuracy:.4f}")
     
     labels = VALID_ACTS
     
+     #Per-class metrics
     precision, recall, f1, support = precision_recall_fscore_support(
         y_true, y_pred, labels=labels, average=None, zero_division=0
     )
@@ -79,10 +108,12 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     for i, label in enumerate(labels):
         print(f"{label:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<8}")
    
+    #Macro averages
     macro_precision = np.mean(precision)
     macro_recall = np.mean(recall)
     macro_f1 = np.mean(f1)
     
+    #Weighted averages
     if support.sum() == 0:
         weighted_precision = 0.0
         weighted_recall = 0.0
@@ -96,9 +127,15 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     print(f"{'Macro avg':<15} {macro_precision:<10.4f} {macro_recall:<10.4f} {macro_f1:<10.4f} {len(y_true):<8}")
     print(f"{'Weighted avg':<15} {weighted_precision:<10.4f} {weighted_recall:<10.4f} {weighted_f1:<10.4f} {len(y_true):<8}")
 
+    #Show confusion matrix heatmap
     plot_confusion_matrix(y_true, y_pred, labels, model_name)
     
 def print_model_comparison(results):
+    """
+Compare multiple models by printing their accuracy, macro F1, and weighted F1 scores.
+Takes as input "results" dictionary which maps model name -> (y_true, y_pred).
+Prints a formatted comparison table with accuracy, macro F1 and weighted F1 for each model.
+"""
     print(f"\n{'='*80}")
     print(f"MODEL COMPARISON")
     print(f"{'='*80}")
@@ -120,6 +157,10 @@ def print_model_comparison(results):
         print(f"{model_name:<35} {accuracy:<10.4f} {macro_f1:<10.4f} {weighted_f1:<12.4f}")
 
 def print_deduplication_analysis(results):
+    """
+    For each supported model (Decision Tree, Logistic Regression, MLP, Gradient Boosting) retrieves accuracy on original and deduplicated datasets.
+    Prints a table showing accuracy for both versions and their difference.
+    """
     print(f"\n{'='*60}")
     print(f"DEDUPLICATION IMPACT")
     print(f"{'='*60}")
@@ -127,7 +168,8 @@ def print_deduplication_analysis(results):
     model_pairs = {
         'Decision Tree': ('Decision Tree (Original)', 'Decision Tree (Deduplicated)'),
         'Logistic Regression': ('Logistic Regression (Original)', 'Logistic Regression (Deduplicated)'),
-        'MLP': ('MLP (Original)', 'MLP (Deduplicated)')
+        'MLP': ('MLP (Original)', 'MLP (Deduplicated)'),
+        'Gradient Boosting': ('Gradient Boosting (Original)', 'Gradient Boosting (Deduplicated)')
     }
     
     print(f"{'Model':<20} {'Original':<10} {'Dedup':<10} {'Difference':<12}")
@@ -142,6 +184,16 @@ def print_deduplication_analysis(results):
             print(f"{model_type:<20} {orig_acc:<10.4f} {dedup_acc:<10.4f} {diff:<10.4f}")
 
 def full_evaluation(results, data=None):
+    """
+    Runs a complete evaluation suite over all models.
+    Takes as input:
+        results (dict): Mapping model_name -> (y_true, y_pred).
+        data: Optional datasets used to print example misclassifications.
+              Expects keys 'orig' and 'dedup', each a tuple (train_labels, test_labels, train_utts, test_utts).
+    For each model: print detailed metrics (incl. confusion matrix).
+    If `data` provided: show a per-model summary of misclassification patterns and print up to 3 example misclassified utterances.
+    Prints cross-model comparison and deduplication impact tables.
+    """
     print(f"\n{'#'*80}")
     print(f"DIALOG ACT CLASSIFICATION EVALUATION")
     print(f"{'#'*80}")
