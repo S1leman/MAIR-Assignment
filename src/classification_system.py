@@ -6,16 +6,29 @@ from ml_models import decision_tree_classifier, logistic_regression_classifier, 
 from evaluation import  full_evaluation
 
 def train_all_models(data):
+    """
+    Train baseline and ML classifiers on both original and deduplicated datasets, then produce predictions. 
+    Function takes as input a "data" dictionary which contains two tuples under keys:
+            - 'orig': (train_labels, test_labels, train_utterances, test_utterances)
+            - 'dedup': (train_labels, test_labels, train_utterances, test_utterances)
+    Function returns:
+            "results" dictionary: Maps model name -> (gold_test_labels, predicted_labels).
+            "models" dictionary: Trained models, vectorizers, and (for MLP) label encoders for both datasets.
+    """    
+    
     print("\nTraining and evaluating models...")
 
+    #Unpack original and deduplicated datasets
     train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig = data['orig']
     train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup = data['dedup']
-
+   
+    #Get the majority class from the original training set
     majority_label = Counter(train_acts_orig).most_common(1)[0][0]
     maj_pred_orig = majority_baseline_model(test_utts_orig, majority_label)
     rules_pred_orig = rules_baseline_model(test_utts_orig)
     print(f"Majority class: {majority_label}")
 
+    #Train ML models on original data 
     dt_model_orig, dt_vectorizer_orig = decision_tree_classifier(
         train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig, return_model=True)
     lr_model_orig, lr_vectorizer_orig = logistic_regression_classifier(
@@ -25,12 +38,14 @@ def train_all_models(data):
     gb_model_orig, gb_vectorizer_orig = gradient_boosting_classifier(
         train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig, return_model=True)
 
+    #Predictions for original test set
     dt_pred_orig = dt_model_orig.predict(dt_vectorizer_orig.transform(test_utts_orig))
     lr_pred_orig = lr_model_orig.predict(lr_vectorizer_orig.transform(test_utts_orig))
     mlp_pred_orig_int = mlp_model_orig.predict(mlp_vectorizer_orig.transform(test_utts_orig).toarray())
     mlp_pred_orig = mlp_le_orig.inverse_transform(mlp_pred_orig_int)
     gb_pred_orig = gb_model_orig.predict(gb_vectorizer_orig.transform(test_utts_orig))
 
+    #Train ML models on deduplicated data 
     dt_model_dedup, dt_vectorizer_dedup = decision_tree_classifier(
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
     lr_model_dedup, lr_vectorizer_dedup = logistic_regression_classifier(
@@ -39,13 +54,14 @@ def train_all_models(data):
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
     gb_model_dedup, gb_vectorizer_dedup = gradient_boosting_classifier(
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
-
+    #Predictions for deduplicated test set
     dt_pred_dedup = dt_model_dedup.predict(dt_vectorizer_dedup.transform(test_utts_dedup))
     lr_pred_dedup = lr_model_dedup.predict(lr_vectorizer_dedup.transform(test_utts_dedup))
     mlp_pred_dedup_int = mlp_model_dedup.predict(mlp_vectorizer_dedup.transform(test_utts_dedup).toarray())
     mlp_pred_dedup = mlp_le_dedup.inverse_transform(mlp_pred_dedup_int)
     gb_pred_dedup = gb_model_dedup.predict(gb_vectorizer_dedup.transform(test_utts_dedup))
     
+    #Collect all ground truth + predictions for evaluation
     results = {
         "Majority Baseline (Original)": (test_acts_orig, maj_pred_orig),
         "Rules Baseline (Original)": (test_acts_orig, rules_pred_orig),
@@ -59,6 +75,7 @@ def train_all_models(data):
         "Gradient Boosting (Deduplicated)": (test_acts_dedup, gb_pred_dedup),
     }
 
+    #Store trained models and vectorizers for later use
     models = {
         "dt_model_orig": dt_model_orig, "dt_vectorizer_orig": dt_vectorizer_orig,
         "lr_model_orig": lr_model_orig, "lr_vectorizer_orig": lr_vectorizer_orig,
@@ -73,19 +90,27 @@ def train_all_models(data):
     return  results, models
   
 def choose_dataset_and_model():
+    """
+    Asks user to choose a dataset (original or deduplicated) and then select a classifier for prediction.
+    Returns a tuple:
+        suffix: "orig" or "dedup" depending on dataset choice, or None if exit.
+        choice: User's classifier menu choice, or None if exit.
+    """
+    #Dataset selection menu
     while True:
         print("\nChoose dataset for prediction:")
         print("1. Original")
         print("2. Deduplicated")
         print("3. Exit")
         dataset_choice = input("\nSelect dataset (1-3): ").strip()
-        if dataset_choice == "3":
+        if dataset_choice == "3": 
             return None, None
         if dataset_choice not in ["1", "2"]:
             print("Invalid choice.")
             continue
         suffix = "orig" if dataset_choice == "1" else "dedup"
 
+       #Classifier selection menu
         while True:
             if suffix == "orig":
                 print(f"\nAvailable classifiers for Original data:")
@@ -115,17 +140,26 @@ def choose_dataset_and_model():
             return suffix, choice
 
 def interactive_classification(models):
+    """
+    Launch an interactive CLI loop for classifying user-entered utterances.
+    Takes as input "models" dictionary of trained models, vectorizers, and label encoders.
+    Lets the user choose dataset (original/deduplicated) and classifier.
+    Accepts free-text utterances, predicts dialog acts, and prints results.
+    Supports 'back' to change model/dataset and 'quit'/'exit' to terminate.
+    """
     print(f"\n{'='*60}")
     print("INTERACTIVE CLASSIFICATION")
     print(f"{'='*60}")
 
     while True:
+        #Prompt user to select dataset + model
         result = choose_dataset_and_model()
         if result == (None, None):
             print("Goodbye!")
             break
         suffix, choice = result
 
+        #Map menu choices to model names for display
         if suffix == "orig":
             model_names = {
                 "1": "Majority", "2": "Rules", "3": "Decision Tree",
@@ -186,6 +220,13 @@ def interactive_classification(models):
                 print(f"Error: {e}")
 
 def main():
+    """
+    Entry point for the Dialog Act Classification System.
+    Loads datasets (original and deduplicated).
+    Trains baseline and ML models, and gather predictions.
+    Runs evaluation on all models.
+    Starts interactive classification session.
+    """    
     print("DIALOG ACT CLASSIFICATION SYSTEM")
     print("="*60)
     
