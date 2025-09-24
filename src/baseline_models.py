@@ -1,8 +1,14 @@
 def majority_baseline_model(test_utterances, majority_label):
+    # Predicts the majority label for all test utterances (which is "inform" by default).
     return [majority_label] * len(test_utterances)
 
 
 def rules_baseline_model(test_utterances):
+    """
+    Predicts labels using predefined keyword-matching rules.
+    If a keyword is found in the utterance, assigns the corresponding label.
+    If no rule matches, defaults to the majority class "inform".
+    """
     rules = {
             'affirm': ['yes', 'correct', 'right', 'yeah', 'ye'],
             'thankyou': ['thank you', 'thanks'],
