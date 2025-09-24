@@ -45,52 +45,31 @@ python src/classification_system.py
 ### Example Dialogs
 #### Example 1
 System: Hello, welcome to the Cambridge restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?  
-User: i want to eat italian
-
-System: What part of town do you have in mind?
-
-User: maybe in the north 
-
-System: Would you like something in the cheap, moderate, or expensive price range?
-
-User: moderately proced
-
-System: You are looking for a restaurant in the north of town in the moderate price range serving italian food, right?    
-
-User: yes
-
-System: I'm sorry but there is no restaurant serving that type of food
-
-User: no im good
-
+User: i want to eat italian  
+System: What part of town do you have in mind?  
+User: maybe in the north  
+System: Would you like something in the cheap, moderate, or expensive price range?  
+User: moderately proced  
+System: You are looking for a restaurant in the north of town in the moderate price range serving italian food, right?  
+User: yes  
+System: I'm sorry but there is no restaurant serving that type of food  
+User: no im good  
 Thank you for using the Cambridge restaurant system. Goodbye!
 
 
 #### Example 2
-System: Hello, welcome to the Cambridge restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?
-
-User: i want to eat at a cheap pestaurant in the south 
-
-System: What kind of food would you like?
-
-User: chinese
-
-System: You are looking for a restaurant in the south of town in the cheap price range serving chinese food, right?       
-
-User: yes
-
-System: the missing sock is a nice place in the south of town and the prices are cheap
-
-User: mmm something different
-
-System: rice house is a nice place in the south of town and the prices are cheap
-
-User: that sounds good
-
-System: rice house is a great restaurant
-
-User: thank you
-
+System: Hello, welcome to the Cambridge restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?  
+User: i want to eat at a cheap pestaurant in the south  
+System: What kind of food would you like?  
+User: chinese  
+System: You are looking for a restaurant in the south of town in the cheap price range serving chinese food, right?  
+User: yes  
+System: the missing sock is a nice place in the south of town and the prices are cheap  
+User: mmm something different  
+System: rice house is a nice place in the south of town and the prices are cheap  
+User: that sounds good  
+System: rice house is a great restaurant  
+User: thank you  
 Thank you for using the Cambridge restaurant system. Goodbye!
 
 
