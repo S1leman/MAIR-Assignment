@@ -9,6 +9,8 @@ def rules_baseline_model(test_utterances):
     If a keyword is found in the utterance, assigns the corresponding label.
     If no rule matches, defaults to the majority class "inform".
     """
+
+    #Each label has associated keywords or phrases
     rules = {
             'affirm': ['yes', 'correct', 'right', 'yeah', 'ye'],
             'thankyou': ['thank you', 'thanks'],
@@ -38,12 +40,14 @@ def rules_baseline_model(test_utterances):
         for label, keywords_list in rules.items():
             for keyword in keywords_list:
                 if " " in keyword:  
+                    #If keyword is a phrase search directly in the utterance
                     if keyword in u:
                         prediction = label
                         found = True
                         break
                 else:
                     if keyword in words:
+                        #Otherwise, check word-level match
                         prediction = label
                         found = True
                         break
