@@ -5,6 +5,7 @@ from utils import (load_data, format_restaurant_info_response,
                    execute_conversation_state, train_classifier, load_trained_model)
 from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
+from baseline_models import (rules_baseline_model,majority_baseline_model)
 
 class RestaurantSystem:
     def __init__(self): 
@@ -43,7 +44,10 @@ class RestaurantSystem:
             'vectorizer': 'mlp_vectorizer.pkl', 
             'label_encoder': 'mlp_label_encoder.pkl'
         }
-        
+        #Baseline classifier
+        self.classifier_type = None
+        self.majority_label = "inform"
+
         # Restaurant tracking
         self.current_restaurant = None
         self.current_restaurant_name = None
@@ -54,6 +58,7 @@ class RestaurantSystem:
         self.conversation_turn = 0
     
     def ensure_model_ready(self):
+        
         if self.is_trained:
             return True
         
@@ -63,12 +68,25 @@ class RestaurantSystem:
         print("No pre-trained model available. Training new model...")
         return train_classifier(self)
            
-    def classify_utterance(self, user_utterance): 
-        user_utterance = user_utterance.lower()
-        X_input = self.mlp_vectorizer.transform([user_utterance])
-        prediction_int = self.mlp_model.predict(X_input)[0]
-        predicted_act = self.mlp_label_encoder.inverse_transform([prediction_int])[0]
-        return predicted_act
+    def classify_utterance(self, user_utterance):
+
+        if self.classifier_type == "mlp":
+            user_utterance = user_utterance.lower()
+            X_input = self.mlp_vectorizer.transform([user_utterance])
+            prediction_int = self.mlp_model.predict(X_input)[0]
+            predicted_act = self.mlp_label_encoder.inverse_transform([prediction_int])[0]
+            return predicted_act
+        
+        elif self.classifier_type == "majority":
+            return majority_baseline_model([user_utterance], self.majority_label)[0]
+        
+        elif self.classifier_type == "rules":
+            return rules_baseline_model([user_utterance])[0]
+        
+        else:
+            raise ValueError(f"Unknown classifier_type: {self.classifier_type}")
+
+
 
     def parse_user_input(self, user_input: str, context_stage=None): 
         old_prefs = self.user_requirements.copy()
