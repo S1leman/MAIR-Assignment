@@ -1,8 +1,8 @@
-restaurantname,pricerange,area,food,phone,addr,postcode,foodquality,crowdedness,lengthstay
-saint johns chop house,moderate,west,british,01223 353110,21 - 24 northampton street,c.b 3,bad,not busy,long
+restaurantname,pricerange,area,food,phone,addr,postcode,food_quality,crowdedness,length_stay
+saint johns chop house,moderate,west,british,01223 353110,21 - 24 northampton street,c.b 3,bad,busy,short
 restaurant alimentum,moderate,north,modern european,01223 413000,152 - 154 hills road,c.b 2,good,busy,short
-pizza hut cherry hinton,moderate,south,italian,01223 323737,g4 cambridge leisure park clifton way cherry hinton,c.b 1,bad,not busy,short
-the gardenia,moderate,west,romanian,01223 356354,2 rose crescent city centre,c.b 2,bad,busy,short
+pizza hut cherry hinton,moderate,south,italian,01223 323737,g4 cambridge leisure park clifton way cherry hinton,c.b 1,bad,not busy,long
+the gardenia,moderate,west,romanian,01223 356354,2 rose crescent city centre,c.b 2,bad,not busy,long
 loch fyne,moderate,centre,seafood,01223 362433,the little rose 37 trumpington street,c.b 2,bad,busy,long
 yu garden,expensive,east,chinese,01223 248882,529 newmarket road fen ditton,c.b 5,good,not busy,long
 sitar tandoori,expensive,east,steakhouse,01223 249955,43 high street cherry hinton cherry hinton,c.b 1,bad,busy,long

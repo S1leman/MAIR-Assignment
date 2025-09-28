@@ -12,10 +12,7 @@ class RestaurantLookup:
 
     def lookup(self, filters):
         """
-        Return the first matching restaurant name plus alternative matches.
-        Takes as input "filters" dictionary which maps column -> desired value.
-        Ignores any filter where the value is "dontcare".
-        Returns he restaurant name of the first match, or None if none found and a list of dicts for alternative matches.
+        Return first matching restaurant and alternative matches based on filters.
         """
         if self.df is None:
             return None, []

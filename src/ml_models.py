@@ -8,10 +8,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 def gradient_boosting_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     """
-    Train a Gradient Boosting classifier on bag-of-words features and predict on the test set.
-    Takes as input the training labels, test labels, train utterances, test utterances and a flag. 
-    If flag is True then the function returns (fitted_model, vectorizer) instead of predictions.
-    Returns the Predicted labels for the test set or (model, vectorizer) if flag is True.
+    Train a Gradient Boosting classifier on bag-of-words features.
     """
     #Vectorize text via bag-of-words (fit on train, apply to test)
     vectorizer = CountVectorizer()
@@ -29,7 +26,7 @@ def gradient_boosting_classifier(train_acts, test_acts, train_utterances, test_u
 
 def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False):
     """
-    Train a Decision Tree classifier on n-gram bag-of-words features and predict on the test set.
+    Train a Decision Tree classifier on n-gram bag-of-words features.
     """
     #Vectorize text into up-to-5-gram BoW features
     vectorizer = CountVectorizer(ngram_range=(1,5)) 

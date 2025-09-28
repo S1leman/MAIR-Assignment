@@ -5,15 +5,7 @@ import matplotlib.pyplot as plt
 
 def print_misclassifications(y_true, y_pred, utterances, model_name="Model", dataset_name="Dataset"):
     """
-    Print all misclassified utterances along with their predicted and actual labels.
-    Takes as input:
-        y_true: Ground truth labels.
-        y_pred: Predicted labels .
-        utterances: Original utterances corresponding to predictions.
-        model_name: Name of the model.
-        dataset_name: Name of the dataset.
-    Prints each misclassified utterance with predicted vs actual label.
-    Counts and displays the total number of misclassifications.
+    Print misclassified utterances with predicted and actual labels.
     """
     print(f"\n-- Misclassifications for {model_name} on {dataset_name} --")
     errors = 0

@@ -22,12 +22,15 @@ def build_restaurant_info(csv_in="data/restaurant_info.csv",csv_out="data/restau
 
 def format_restaurant_info_response(restaurant, user_input):
     """
-    Builds a natural-language response with phone/address/postcode for a restaurant.
-    If user asked for specific fields (phone/address/postcode), return only those. Otherwise, return all available fields succinctly.
-    Takes as input a 'restaurant'dictionary with keys like 'restaurantname', 'phone', 'addr', 'postcode' and 'user_input'which is the user utterance used to infer requested fields.
+    Builds natural-language response with restaurant contact information.
+    Returns specific fields if requested, otherwise returns all available information.
     """
     if not restaurant:
         return "I'm sorry, I don't have any restaurant information available to provide details."
+    
+    # Ensure restaurant is a dictionary
+    if not isinstance(restaurant, dict):
+        return "I'm sorry, I'm having trouble accessing the restaurant information right now."
     
     utterance_lower = user_input.lower()
     
@@ -45,23 +48,26 @@ def format_restaurant_info_response(restaurant, user_input):
     postcode = restaurant.get('postcode')
     has_postcode = postcode and str(postcode).lower() not in ['nan', 'none', '', 'not available']
     
+    # Get restaurant name safely
+    restaurant_name = restaurant.get('restaurantname', 'the restaurant')
+    
     # Build response based on what was requested
     info_parts = []
     
     if phone_requested:
-        info_parts.append(f"The phone number of {restaurant['restaurantname']} is {phone}")
+        info_parts.append(f"The phone number of {restaurant_name} is {phone}")
     
     if address_requested:
         if has_address:
-            info_parts.append(f"Sure, {restaurant['restaurantname']} is on {addr}")
+            info_parts.append(f"Sure, {restaurant_name} is on {addr}")
         else:
-            info_parts.append(f"I'm sorry, the address for {restaurant['restaurantname']} is not available")
+            info_parts.append(f"I'm sorry, the address for {restaurant_name} is not available")
     
     if postcode_requested:
         if has_postcode:
-            info_parts.append(f"The post code of {restaurant['restaurantname']} is {postcode}")
+            info_parts.append(f"The post code of {restaurant_name} is {postcode}")
         else:
-            info_parts.append(f"I'm sorry, the post code for {restaurant['restaurantname']} is not available")
+            info_parts.append(f"I'm sorry, the post code for {restaurant_name} is not available")
     
     # Generate response
     if phone_requested or address_requested or postcode_requested:
@@ -74,7 +80,7 @@ def format_restaurant_info_response(restaurant, user_input):
     else:
         # Default: provide all available information
         response_parts = []
-        response_parts.append(f"The phone number of {restaurant['restaurantname']} is {phone}")
+        response_parts.append(f"The phone number of {restaurant_name} is {phone}")
         
         if has_address:
             response_parts.append(f"it is on {addr}")
@@ -92,38 +98,133 @@ def format_restaurant_info_response(restaurant, user_input):
 
 def format_restaurant_suggestion(restaurant):
     """
-    Returns a restaurant suggestion.
+    Returns a restaurant suggestion with inference explanations.
     """
     if not restaurant:
         return None
-        
-    area_desc = f" in the {restaurant['area']} of town" if restaurant['area'] != 'centre' else " in the city centre"
-    price_desc = f" and the prices are {restaurant['pricerange']}" if restaurant['pricerange'] != 'dontcare' else ""
     
-    return f"{restaurant['restaurantname']} is a nice place{area_desc}{price_desc}"
+    # Basic restaurant information
+    name = restaurant['restaurantname']
+    area = restaurant['area']
+    pricerange = restaurant['pricerange'] 
+    food = restaurant['food']
+    
+    # Format area description
+    if area == 'centre':
+        area_desc = " in the city centre"
+    else:
+        area_desc = f" in the {area} of town"
+    
+    # Build main description
+    main_desc = f"System: I recommend '{name}', it is {pricerange} {food} restaurant{area_desc}."
+    
+    # Add inference explanation if available
+    inference_explanation = ""
+    if 'inference_result' in restaurant:
+        from inference_engine import InferenceEngine
+        engine = InferenceEngine()
+        explanation = engine.explain_recommendation(restaurant)
+        if explanation:
+            inference_explanation = f" {explanation}"
+    
+    return main_desc + inference_explanation
 
 
 def detect_restart_command(user_input):
     """
     Detects if the user wants to reset the conversation.
     """
-    return user_input.lower().strip() in ['start over', 'start again', 'reset', 'restart']
+    restart_keywords = ['start over', 'start again', 'reset', 'restart', 'begin again', 'new search']
+    input_lower = user_input.lower().strip()
+    return any(keyword in input_lower for keyword in restart_keywords)
+
+
+def detect_exit_command(user_input):
+    """
+    Detects if the user wants to exit the conversation.
+    """
+    exit_keywords = ['exit', 'quit', 'bye', 'goodbye', 'goodby', 'stop', 'end', 'close', 'leave', 'finish']
+    input_lower = user_input.lower().strip()
+    
+    # Check for exact matches
+    if input_lower in exit_keywords:
+        return True
+    
+    # Check for common phrases and variations
+    exit_phrases = ['bye bye', 'good bye', 'see you', 'gotta go', 'have to go', 'need to go', 'good by']
+    return any(phrase in input_lower for phrase in exit_phrases)
 
 
 def detect_new_search_request(user_input):
     """
-    Heuristically detect if the user is requesting a new restaurant search.
+    Detects if the user is making a new restaurant search request.
+    """
+    new_search_indicators = ['i want', 'i would like', 'looking for', 'find me', 'search for', 'how about']
+    input_lower = user_input.lower().strip()
+    return any(indicator in input_lower for indicator in new_search_indicators)
+
+
+def detect_preference_change_request(user_input):
+    """
+    Detects if the user wants to change preferences after seeing a restaurant suggestion.
+    Returns the type of preference they want to change or None.
     """
     input_lower = user_input.lower()
-    search_keywords = ['is there', 'do you have', 'find me', 'looking for', 'want', 'need']
-    return any(keyword in input_lower for keyword in search_keywords)
+    
+    # Food type change indicators
+    food_indicators = ['different food', 'different cuisine', 'another type of food', 
+                      'change the food', 'not this food', 'other food', 'different kind of food',
+                      'prefer', 'rather have', 'how about', 'what about']
+    
+    # Price change indicators  
+    price_indicators = ['cheaper', 'more expensive', 'different price', 'less expensive',
+                        'budget', 'pricier', 'more affordable', 'change the price']
+    
+    # Area change indicators
+    area_indicators = ['different area', 'another part', 'different location', 
+                      'somewhere else', 'other area', 'change the area', 'different part of town']
+    
+    # Check for food type changes
+    if any(indicator in input_lower for indicator in food_indicators):
+        # Check if they're mentioning a specific food type
+        from preference_extraction import PreferenceExtractor
+        prefs = PreferenceExtractor.extract_all(input_lower)
+        if prefs.get('food'):
+            return 'food_change'
+    
+    # Check for price changes
+    if any(indicator in input_lower for indicator in price_indicators):
+        from preference_extraction import PreferenceExtractor
+        prefs = PreferenceExtractor.extract_all(input_lower)
+        if prefs.get('price'):
+            return 'price_change'
+    
+    # Check for area changes
+    if any(indicator in input_lower for indicator in area_indicators):
+        from preference_extraction import PreferenceExtractor
+        prefs = PreferenceExtractor.extract_all(input_lower)
+        if prefs.get('area'):
+            return 'area_change'
+    
+    # Check for general preference specification after suggestion
+    # e.g., "I want italian food" or "in the north" after seeing a restaurant
+    from preference_extraction import PreferenceExtractor
+    prefs = PreferenceExtractor.extract_all(input_lower)
+    if any(prefs.get(key) not in [None, 'dontcare'] for key in ['food', 'price', 'area']):
+        # Check if this looks like a preference change rather than new search
+        change_words = ['instead', 'rather', 'actually', 'prefer', 'but', 'how about', 'what about']
+        if any(word in input_lower for word in change_words):
+            return 'preference_update'
+        # Also check if it's a simple preference statement  
+        if len(input_lower.split()) <= 5:  # Short preference statements
+            return 'preference_update'
+    
+    return None
 
 
 def get_state_name_from_value(states_dict, state_value): 
     """
-    Reverse-lookup a state name (key) by its value.
-    Takes as input a 'states_dict'dictionary which maps state names -> state constants/values and 'state_value' which is the value to look up.
-    Returns the first matching key, or None if not found.
+    Reverse-lookup a state name by its value.
     """
     for name, value in states_dict.items():
         if value == state_value:
@@ -132,14 +233,7 @@ def get_state_name_from_value(states_dict, state_value):
 
 def update_preferences_with_context(user_requirements, validated_prefs, context_stage):
     """
-    Merge newly validated preferences into the running user requirements.
-    If 'context_stage' is present, only update the preference relevant to that stage.
-    Otherwise, update any preferences that are currently unset.
-
-    Takes as input:
-        'user_requirements' dictionary: Mutable dict of current requirements (keys: 'area','price','food').
-        'validated_prefs' dictionary: Extracted preferences from the latest utterance.
-        'context_stage': Current dialog stage key (e.g., 'ASK_AREA'), or None.
+    Merge newly validated preferences into user requirements based on context stage.
     """
     if context_stage:
         stage_mapping = {
@@ -183,10 +277,6 @@ def log_preference_changes(validated_prefs, user_requirements, old_prefs, errors
 def execute_conversation_state(system, current_state, states):
     """
     Dispatch to the appropriate conversation state handler.
-    Takes as input:
-        'system': Object holding 'conversation_states' with bound handler methods.
-        'current_state': Current state constant/value.
-        'states' dictionary: Mapping of state names -> state constants/values.
     """
     # Map state values to handler callables
     state_handlers = {
@@ -195,6 +285,7 @@ def execute_conversation_state(system, current_state, states):
         states['ASK_PRICE']: system.conversation_states.ask_price,
         states['ASK_FOOD_TYPE']: system.conversation_states.ask_food_type,
         states['CONFIRM']: system.conversation_states.confirm,
+        states['ASK_ADDITIONAL_REQUIREMENTS']: system.conversation_states.ask_additional_requirements,
         states['APOLOGIZE']: system.conversation_states.apologize,
         states['SUGGEST_RESTAURANT']: system.conversation_states.suggest_restaurant,
         states['INFORM']: system.conversation_states.inform,
@@ -210,17 +301,7 @@ def execute_conversation_state(system, current_state, states):
 
 def read_data(path, deduplicate: bool = False):
     """
-    Reads labeled dialog data from a file and (optionally) deduplicate by utterance.
-    Deduplication rule:
-    -The first act seen for a given utterance is kept as canonical.
-    -If deduplicate=False: duplicates are included but their act is replaced by the first-seen act (ensures label consistency).
-    -If deduplicate=True: only the first occurrence of each utterance is kept.
-
-    Takes as input:
-    -'path': Input data path.
-    -'deduplicate': Whether to drop duplicate utterances.
-
-    Returns tuples of dialogue_acts and  utterances.
+    Reads labeled dialog data from file with optional deduplication.
     """
     dialogue_act = []
     utterance = []

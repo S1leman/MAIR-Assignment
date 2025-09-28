@@ -5,12 +5,19 @@ import numpy as np
 
 class PreferenceExtractor:
     """
-    Extracts restaurant preferences (food type, price range, area) from an utterance.
-    What it does:
-    - Detects explicit mentions (e.g., "italian", "cheap", "north").
-    - Uses regex to capture likely phrases (e.g., "<food> food", "<area> part of town").
-    - Applies Levenshtein distance as a fallback when no exact match is found.
-    - Recognizes "dontcare" intents via common phrases (e.g. "any area").
+    Extracts restaurant preferences (food type, price range, area) from user utterances.
+    Use        for patt in patterns:
+            match = re.search(patt, utt)
+            if match:
+                potential_area = match.group(1).strip()
+                if potential_area in PreferenceExtractor.areas:
+                    preference["area"] = potential_area
+                    return preference
+                
+                closest = PreferenceExtractor.closest_term(potential_area, PreferenceExtractor.areas)
+                if closest:
+                    preference["area"] = closest
+                    return preference, regex patterns, and fuzzy matching with Levenshtein distance.
     """
 
     food_types = [
@@ -24,36 +31,58 @@ class PreferenceExtractor:
     areas = ['west', 'north', 'south', 'centre', 'center', 'east']  
     price_ranges = ['cheap', 'moderate', 'expensive', 'moderately priced']
 
+    @staticmethod
+    def is_dontcare_response(utterance):
+        """
+        Check if the utterance is a general don't care response
+        """
+        dontcare_patterns = [
+            'any', 'anything', 'dont care', 'i dont care', "i don't care",  "don't care", 'doesnt matter', 
+            "doesn't matter", 'no preference', 'whatever', 'i dont mind',
+            "i don't mind", 'all', 'either', 'both', 'anywhere', 'anyplace'
+        ]
+        utterance_lower = utterance.lower().strip()
+        
+        # Check for exact matches
+        if utterance_lower in dontcare_patterns:
+            return True
+        
+        # Check if utterance contains only these patterns (with some flexibility)
+        for pattern in dontcare_patterns:
+            if utterance_lower == pattern or utterance_lower == f"{pattern} is fine" or \
+               utterance_lower == f"{pattern} is good" or utterance_lower == f"{pattern} is ok":
+                return True
+        
+        return False
 
     @staticmethod
     def closest_term(word, terms, max_distance=3):
         """
-        Returns the closest matching term by Levenshtein distance from 'terms' if  edit distance ≤ max_distance & the first letter matches.
-        This extra first-letter check reduces spurious matches for unrelated words.
+        Returns closest matching term using Levenshtein distance with first letter matching.
         """
         best_term = None
         best_distance = float("inf")
-        #print(f"were in the closest term function now, the word is: {word}")
         for term in terms:
             dist = Levenshtein.distance(word, term)
             if dist < best_distance:
                 best_distance = dist
                 best_term = term
-        #print(f"were in the closest term function now, closest term: {best_term}")
         if best_distance <= max_distance and best_term[:1] == word[:1]:
             return best_term
         return None
     
     @staticmethod
-    def food_extraction(utterance, preference):
+    def food_extraction(utterance, preference, context=None):
         """
-        Extracta a food type by:
-        -Exact token match against 'food_types'.
-        -Regex candidates (e.g., "<x> food", "<x> restaurant"), then validate.
-        -Fuzzy fallback via 'closest_term'.
-        -Recognizing "dontcare" phrases.
+        Extract food type from utterance using exact match, regex, and fuzzy matching.
         """
         utt = utterance.lower()
+        
+        # Check for general don't care first (especially in ASK_FOOD_TYPE context)
+        if context == 'ASK_FOOD_TYPE' and PreferenceExtractor.is_dontcare_response(utterance):
+            preference["food"] = 'dontcare'
+            return preference
+        
         potential_food_type = ''
 
         #Regex attempts
@@ -87,7 +116,8 @@ class PreferenceExtractor:
 
         #Dontcare detection
         food_dontcare = ['any food', 'any type of food', 'any cuisine', 'doesnt matter what food', 
-                        "doesn't matter what food", 'whatever food', 'anything to eat']
+                        "doesn't matter what food", 'whatever food', 'anything to eat', 'any type',
+                        'any kind of food', 'any kind']
         if any(expr in utterance for expr in food_dontcare):
             preference["food"] = 'dontcare'
             return preference
@@ -95,14 +125,21 @@ class PreferenceExtractor:
         return preference
 
     @staticmethod
-    def price_extraction(utterance, preference):
+    def price_extraction(utterance, preference, context=None):
         """
         Extract a price range by:
+        -Checking for general don't care responses
         -Exact token match.
         -Regex candidates (e.g., "<x> restaurant", "<x> price")
         -Recognizing "dontcare" phrases.
         """
         utt = utterance.lower()
+        
+        # Check for general don't care first (especially in ASK_PRICE context)
+        if context == 'ASK_PRICE' and PreferenceExtractor.is_dontcare_response(utterance):
+            preference["price"] = 'dontcare'
+            return preference
+        
         potential_price = ''
 
         patterns = [
@@ -122,15 +159,11 @@ class PreferenceExtractor:
 
         #Regex candidate -> validate if needed
         for patt in patterns:
-            #print(f"pattern:{patt}")
             match = re.search(patt, utt)
             if match:
                 potential_price = match.group(1).strip()
-                #print(f"match found:{potential_price}")
 
-            #print(f"potential food type voor de lengte check: {potential_price}")
             if len(potential_price) >= 4:
-                #print("length is groter of gelijk aan 4")
                 closest = PreferenceExtractor.closest_term(potential_price, PreferenceExtractor.price_ranges)
                 if closest:
                     preference["price"] = closest
@@ -140,7 +173,8 @@ class PreferenceExtractor:
         price_dontcare = ['any price', 'any price range', 'any budget', 'whatever price', 
                          'any cost', 'doesnt matter how much', "doesn't matter how much",
                          "doesn't matter what it costs", "doesnt matter what it costs",
-                         'whatever it costs', 'any amount']
+                         'whatever it costs', 'any amount', 'price doesnt matter',
+                         "price doesn't matter"]
         if any(expr in utterance for expr in price_dontcare):
             preference["price"] = 'dontcare'
             return preference
@@ -148,14 +182,21 @@ class PreferenceExtractor:
         return preference
 
     @staticmethod
-    def area_extraction(utterance, preference):
+    def area_extraction(utterance, preference, context=None):
         """
         Extract an area by:
+        -Checking for general don't care responses
         -Exact token match.
         -Regex candidates focusing on phrases like "in the <x> part/side of town",
         -Recognizing "dontcare" phrases.
         """
         utt = utterance.lower()
+        
+        # Check for general don't care first (especially in ASK_AREA context)
+        if context == 'ASK_AREA' and PreferenceExtractor.is_dontcare_response(utterance):
+            preference["area"] = 'dontcare'
+            return preference
+        
         potential_area = ''
 
         
@@ -192,20 +233,34 @@ class PreferenceExtractor:
                     return preference
                 
         #Dontcare detection
-        if any(expr in utterance for expr in ['any area', 'any part', 'anywhere']):
+        area_dontcare = ['any area', 'any part', 'anywhere', 'any part of town',
+                        'any location', 'doesnt matter where', "doesn't matter where",
+                        'location doesnt matter', "location doesn't matter"]
+        if any(expr in utterance for expr in area_dontcare):
             preference["area"] = 'dontcare'
             return preference
         
         return preference
 
     @staticmethod
-    def extract_all(utterance):
+    def extract_all(utterance, context=None):
         """
         Extracts food, price, and area preferences from utterance.
+        Context can be 'ASK_FOOD_TYPE', 'ASK_PRICE', or 'ASK_AREA' to help with appropriate extraction.
         """
         preference = {}
-        preference = PreferenceExtractor.food_extraction(utterance, preference)
-        preference = PreferenceExtractor.price_extraction(utterance, preference)
-        preference = PreferenceExtractor.area_extraction(utterance, preference)
+        
+        # Context-aware extraction - only extract the type being asked for
+        if context == 'ASK_FOOD_TYPE':
+            preference = PreferenceExtractor.food_extraction(utterance, preference, context)
+        elif context == 'ASK_PRICE':
+            preference = PreferenceExtractor.price_extraction(utterance, preference, context)
+        elif context == 'ASK_AREA':
+            preference = PreferenceExtractor.area_extraction(utterance, preference, context)
+        else:
+            # No specific context - extract all (for general "I want italian food in the south")
+            preference = PreferenceExtractor.food_extraction(utterance, preference, context)
+            preference = PreferenceExtractor.price_extraction(utterance, preference, context)
+            preference = PreferenceExtractor.area_extraction(utterance, preference, context)
+            
         return preference
-    

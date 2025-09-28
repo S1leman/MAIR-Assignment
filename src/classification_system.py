@@ -7,13 +7,7 @@ from evaluation import  full_evaluation
 
 def train_all_models(data):
     """
-    Train baseline and ML classifiers on both original and deduplicated datasets, then produce predictions. 
-    Function takes as input a "data" dictionary which contains two tuples under keys:
-            - 'orig': (train_labels, test_labels, train_utterances, test_utterances)
-            - 'dedup': (train_labels, test_labels, train_utterances, test_utterances)
-    Function returns:
-            "results" dictionary: Maps model name -> (gold_test_labels, predicted_labels).
-            "models" dictionary: Trained models, vectorizers, and (for MLP) label encoders for both datasets.
+    Train baseline and ML classifiers on original and deduplicated datasets.
     """    
     
     print("\nTraining and evaluating models...")
