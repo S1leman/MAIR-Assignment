@@ -1,11 +1,15 @@
 # MAIR Assignment: Cambridge Restaurant Dialog System
+
 ## Installation
 
-### Setup 
-#### Install dependencies
+### Setup
+```bash
+# Install dependencies
 pip install -r requirements.txt
+```
 
-### Run system
+### Run System
+```bash
 python src/dialog_system.py
 ```
 
@@ -71,8 +75,9 @@ models/                       # Trained ML models
 
 ```bash
 python src/classification_system.py
+```
 
-##  Team
+## Team
 
 This is a group of 3 people. The system implements:
 - **Required features**: 3 classifier types, ALL CAPS mode, restart functionality  
