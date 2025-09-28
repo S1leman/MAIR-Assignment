@@ -39,23 +39,38 @@ def format_restaurant_info_response(restaurant, user_input):
     address_requested = 'address' in utterance_lower or 'where' in utterance_lower or 'location' in utterance_lower
     postcode_requested = 'postcode' in utterance_lower or 'post code' in utterance_lower or 'postal' in utterance_lower
     
+    # Additional information requests
+    food_requested = ('food' in utterance_lower or 'cuisine' in utterance_lower or 'serve' in utterance_lower or 
+                     'food type' in utterance_lower or 'type of food' in utterance_lower)
+    area_requested = ('area' in utterance_lower or 'part of town' in utterance_lower or 'location' in utterance_lower or
+                     'where is it' in utterance_lower or 'which area' in utterance_lower)
+    price_requested = ('price' in utterance_lower or 'cost' in utterance_lower or 'expensive' in utterance_lower or 
+                      'cheap' in utterance_lower or 'price range' in utterance_lower)
+    
     # Get available data and check if it's valid
-    phone = restaurant.get('phone', 'not available')
+    phone = restaurant.get('phone')
+    has_phone = phone is not None and str(phone).strip() and str(phone).lower() not in ['nan', 'none', 'not available'] and str(phone) != 'dontcare'
     
     addr = restaurant.get('addr')
-    has_address = addr and str(addr).lower() not in ['nan', 'none', '', 'not available']
+    has_address = addr is not None and str(addr).strip() and str(addr).lower() not in ['nan', 'none', 'not available'] and str(addr) != 'dontcare'
     
     postcode = restaurant.get('postcode')
-    has_postcode = postcode and str(postcode).lower() not in ['nan', 'none', '', 'not available']
+    has_postcode = postcode is not None and str(postcode).strip() and str(postcode).lower() not in ['nan', 'none', 'not available'] and str(postcode) != 'dontcare'
     
-    # Get restaurant name safely
+    # Get basic restaurant info (should always be available)
+    food_type = restaurant.get('food', 'unknown')
+    area = restaurant.get('area', 'unknown')
+    price_range = restaurant.get('pricerange', 'unknown')
+    
     restaurant_name = restaurant.get('restaurantname', 'the restaurant')
     
-    # Build response based on what was requested
     info_parts = []
     
     if phone_requested:
-        info_parts.append(f"The phone number of {restaurant_name} is {phone}")
+        if has_phone:
+            info_parts.append(f"The phone number of {restaurant_name} is {phone}")
+        else:
+            info_parts.append(f"I'm sorry, the phone number for {restaurant_name} is not available")
     
     if address_requested:
         if has_address:
@@ -69,8 +84,19 @@ def format_restaurant_info_response(restaurant, user_input):
         else:
             info_parts.append(f"I'm sorry, the post code for {restaurant_name} is not available")
     
-    # Generate response
-    if phone_requested or address_requested or postcode_requested:
+    if food_requested:
+        info_parts.append(f"{restaurant_name} serves {food_type} food")
+    
+    if area_requested:
+        if area == 'centre':
+            info_parts.append(f"{restaurant_name} is in the city centre")
+        else:
+            info_parts.append(f"{restaurant_name} is in the {area} part of town")
+    
+    if price_requested:
+        info_parts.append(f"{restaurant_name} is in the {price_range} price range")
+    
+    if phone_requested or address_requested or postcode_requested or food_requested or area_requested or price_requested:
         if len(info_parts) == 1:
             return f"{info_parts[0]}."
         elif len(info_parts) == 2:
@@ -78,12 +104,22 @@ def format_restaurant_info_response(restaurant, user_input):
         else:
             return f"{info_parts[0]}, {info_parts[1].lower()}, and {info_parts[2].lower()}."
     else:
-        # Default: provide all available information
         response_parts = []
-        response_parts.append(f"The phone number of {restaurant_name} is {phone}")
+        
+        response_parts.append(f"{restaurant_name} serves {food_type} food")
+        
+        if area == 'centre':
+            response_parts.append(f"it is in the city centre")
+        else:
+            response_parts.append(f"it is in the {area} part of town")
+            
+        response_parts.append(f"in the {price_range} price range")
+        
+        if has_phone:
+            response_parts.append(f"the phone number is {phone}")
         
         if has_address:
-            response_parts.append(f"it is on {addr}")
+            response_parts.append(f"the address is {addr}")
         
         if has_postcode:
             response_parts.append(f"the post code is {postcode}")
@@ -92,8 +128,15 @@ def format_restaurant_info_response(restaurant, user_input):
             return f"{response_parts[0]}."
         elif len(response_parts) == 2:
             return f"{response_parts[0]} and {response_parts[1]}."
-        else:
+        elif len(response_parts) == 3:
             return f"{response_parts[0]}, {response_parts[1]}, and {response_parts[2]}."
+        else:
+            basic_info = f"{response_parts[0]}, {response_parts[1]}, and {response_parts[2]}"
+            if len(response_parts) == 4:
+                return f"{basic_info}. {response_parts[3]}."
+            else:
+                contact_info = ", ".join(response_parts[3:-1]) + f", and {response_parts[-1]}"
+                return f"{basic_info}. {contact_info}."
 
 
 def format_restaurant_suggestion(restaurant):
@@ -162,65 +205,6 @@ def detect_new_search_request(user_input):
     new_search_indicators = ['i want', 'i would like', 'looking for', 'find me', 'search for', 'how about']
     input_lower = user_input.lower().strip()
     return any(indicator in input_lower for indicator in new_search_indicators)
-
-
-def detect_preference_change_request(user_input):
-    """
-    Detects if the user wants to change preferences after seeing a restaurant suggestion.
-    Returns the type of preference they want to change or None.
-    """
-    input_lower = user_input.lower()
-    
-    # Food type change indicators
-    food_indicators = ['different food', 'different cuisine', 'another type of food', 
-                      'change the food', 'not this food', 'other food', 'different kind of food',
-                      'prefer', 'rather have', 'how about', 'what about']
-    
-    # Price change indicators  
-    price_indicators = ['cheaper', 'more expensive', 'different price', 'less expensive',
-                        'budget', 'pricier', 'more affordable', 'change the price']
-    
-    # Area change indicators
-    area_indicators = ['different area', 'another part', 'different location', 
-                      'somewhere else', 'other area', 'change the area', 'different part of town']
-    
-    # Check for food type changes
-    if any(indicator in input_lower for indicator in food_indicators):
-        # Check if they're mentioning a specific food type
-        from preference_extraction import PreferenceExtractor
-        prefs = PreferenceExtractor.extract_all(input_lower)
-        if prefs.get('food'):
-            return 'food_change'
-    
-    # Check for price changes
-    if any(indicator in input_lower for indicator in price_indicators):
-        from preference_extraction import PreferenceExtractor
-        prefs = PreferenceExtractor.extract_all(input_lower)
-        if prefs.get('price'):
-            return 'price_change'
-    
-    # Check for area changes
-    if any(indicator in input_lower for indicator in area_indicators):
-        from preference_extraction import PreferenceExtractor
-        prefs = PreferenceExtractor.extract_all(input_lower)
-        if prefs.get('area'):
-            return 'area_change'
-    
-    # Check for general preference specification after suggestion
-    # e.g., "I want italian food" or "in the north" after seeing a restaurant
-    from preference_extraction import PreferenceExtractor
-    prefs = PreferenceExtractor.extract_all(input_lower)
-    if any(prefs.get(key) not in [None, 'dontcare'] for key in ['food', 'price', 'area']):
-        # Check if this looks like a preference change rather than new search
-        change_words = ['instead', 'rather', 'actually', 'prefer', 'but', 'how about', 'what about']
-        if any(word in input_lower for word in change_words):
-            return 'preference_update'
-        # Also check if it's a simple preference statement  
-        if len(input_lower.split()) <= 5:  # Short preference statements
-            return 'preference_update'
-    
-    return None
-
 
 def get_state_name_from_value(states_dict, state_value): 
     """

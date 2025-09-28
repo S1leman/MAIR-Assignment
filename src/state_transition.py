@@ -1,6 +1,5 @@
-from ml_models import mlp_classifier
 from lookup import RestaurantLookup
-from utils import (load_data, format_restaurant_info_response, 
+from utils import (format_restaurant_info_response, 
                    detect_restart_command, get_state_name_from_value, update_preferences_with_context, log_preference_changes,
                    execute_conversation_state, train_classifier, load_trained_model)
 from preference_extraction import PreferenceExtractor
@@ -14,20 +13,19 @@ class RestaurantSystem:
          
         self.restaurant_lookup = RestaurantLookup("data/restaurant_info_updated.csv")
         
-        # Initialize inference engine
         self.inference_engine = InferenceEngine()
          
         self.states = {
-            'WELCOME': 'welcome',                    # Stage 1
-            'ASK_AREA': 'ask_area',                 # Stage 2
-            'ASK_PRICE': 'ask_price',               # Stage 3
-            'ASK_FOOD_TYPE': 'ask_food_type',       # Stage 4
-            'CONFIRM': 'confirm',                   # Stage 5
-            'ASK_ADDITIONAL_REQUIREMENTS': 'ask_additional_requirements', # Stage 6
-            'APOLOGIZE': 'apologize',               # Stage 7
-            'SUGGEST_RESTAURANT': 'suggest_restaurant', # Stage 8
-            'INFORM': 'inform',                     # Stage 9
-            'GOODBYE': 'goodbye'                    # Stage 10
+            'WELCOME': 'welcome',                    
+            'ASK_AREA': 'ask_area',                 
+            'ASK_PRICE': 'ask_price',               
+            'ASK_FOOD_TYPE': 'ask_food_type',       
+            'ASK_ADDITIONAL_REQUIREMENTS': 'ask_additional_requirements', 
+            'APOLOGIZE': 'apologize',               
+            'CONFIRM': 'confirm',                   
+            'SUGGEST_RESTAURANT': 'suggest_restaurant', 
+            'INFORM': 'inform',                     
+            'GOODBYE': 'goodbye'                    
         }
         
         self.current_state = self.states['WELCOME']
@@ -38,7 +36,7 @@ class RestaurantSystem:
             'food': None        
         }
         
-        # Additional requirements for inference rules
+        # additional reqs for inference rules
         self.additional_requirements = {
             'touristic': None,
             'assigned_seats': None,
@@ -46,44 +44,77 @@ class RestaurantSystem:
             'romantic': None
         }
         
-        # Configuration settings
-        self.allow_restarts = True  # Default to allow restarts
+        # config settings
+        self.allow_restarts = True
+        self.output_caps = False
+        self.use_tts = False
+        self.tts_engine = None
         
-        # For handling romantic conflicts
+        # for handling conflicts
         self.romantic_conflicts = []
+        self.touristic_conflicts = []
         
-        # ML classifier
+        # ML classifier components
         self.mlp_model = None
         self.mlp_vectorizer = None
         self.mlp_label_encoder = None
         self.is_trained = False
-        self.model_path = "models/"  # Directory of trained model
+        self.model_path = "models/"
         self.model_files = {
             'model': 'mlp_model.pkl',
             'vectorizer': 'mlp_vectorizer.pkl', 
             'label_encoder': 'mlp_label_encoder.pkl'
         }
-        #Baseline classifier
+        # baseline classifier
         self.classifier_type = None
         self.majority_label = "inform"
 
-        # Restaurant tracking
+        # restaurant tracking
         self.current_restaurant = None
         self.current_restaurant_name = None
         self.alternatives = []
         self.suggestion_index = 0
         self.conversation_ended = False
         
-        # Conflict resolution
+        # conflict resolution
         self.pending_conflict = None
         self.conflict_restaurant = None
         
         self.conversation_turn = 0
     
+    def format_output(self, message):
+        """format system output and speak if TTS enabled"""
+        formatted_message = message.upper() if self.output_caps else message
+        
+        # speak the message if TTS is enabled
+        if self.use_tts and self.tts_engine:
+            try:
+                self.tts_engine.say(formatted_message)
+                self.tts_engine.runAndWait()
+            except:
+                # if TTS fails, try reinitializing once
+                try:
+                    self.initialize_tts()
+                    self.tts_engine.say(formatted_message)
+                    self.tts_engine.runAndWait()
+                except:
+                    pass  # ignore TTS errors completely
+        
+        return formatted_message
+    
+    def initialize_tts(self):
+        """simple TTS initialization"""
+        try:
+            import pyttsx3
+            self.tts_engine = pyttsx3.init()
+            self.tts_engine.setProperty('rate', 180)
+            self.tts_engine.setProperty('volume', 0.8)
+            return True
+        except:
+            raise Exception("TTS initialization failed")
+    
     def _normalize_slot_values(self):
-        """
-        Normalize slot values to match CSV data format.
-        """
+        """normalize slot values to match CSV data format"""
         a = self.user_requirements.get('area')
         if a == 'center': 
             self.user_requirements['area'] = 'centre'
@@ -93,7 +124,6 @@ class RestaurantSystem:
             self.user_requirements['price'] = 'moderate'
     
     def ensure_model_ready(self):
-        
         if self.is_trained:
             return True
         
@@ -104,35 +134,38 @@ class RestaurantSystem:
         return train_classifier(self)
     
     def get_user_input(self, prompt: str = "User: ") -> str:
-        """
-        Get user input from text input.
-        """
+        """get user input from text input"""
         return input(prompt)
            
     def classify_utterance(self, user_utterance):
-
-        if self.classifier_type == "mlp":
-            user_utterance = user_utterance.lower()
-            X_input = self.mlp_vectorizer.transform([user_utterance])
-            prediction_int = self.mlp_model.predict(X_input)[0]
-            predicted_act = self.mlp_label_encoder.inverse_transform([prediction_int])[0]
-            return predicted_act
-        
-        elif self.classifier_type == "majority":
-            return majority_baseline_model([user_utterance], self.majority_label)[0]
-        
-        elif self.classifier_type == "rules":
-            return rules_baseline_model([user_utterance])[0]
-        
-        else:
-            raise ValueError(f"Unknown classifier_type: {self.classifier_type}")
-
-
+        # handle empty or whitespace-only input
+        if not user_utterance or not user_utterance.strip():
+            return "null"
+            
+        try:
+            if self.classifier_type == "mlp":
+                user_utterance = user_utterance.lower()
+                X_input = self.mlp_vectorizer.transform([user_utterance])
+                prediction_int = self.mlp_model.predict(X_input)[0]
+                predicted_act = self.mlp_label_encoder.inverse_transform([prediction_int])[0]
+                return predicted_act
+            
+            elif self.classifier_type == "majority":
+                return majority_baseline_model([user_utterance], self.majority_label)[0]
+            
+            elif self.classifier_type == "rules":
+                return rules_baseline_model([user_utterance])[0]
+            
+            else:
+                raise ValueError(f"Unknown classifier_type: {self.classifier_type}")
+        except Exception as e:
+            print(f"[Classification error: {e}]")
+            return "null"
 
     def parse_user_input(self, user_input: str, context_stage=None): 
         old_prefs = self.user_requirements.copy()
         
-        # Check for restart command first
+        # check restart command first
         if detect_restart_command(user_input):
             if self.allow_restarts:
                 print("[User requested restart - preferences reset]")
@@ -142,21 +175,21 @@ class RestaurantSystem:
                 print("[Restart requested but disabled]")
                 return None
         
-        # Pass context to preference extractor for better don't care detection
+
         extracted_prefs = PreferenceExtractor.extract_all(user_input, context=context_stage)
 
         print(f"[Extracted preferences: {extracted_prefs}]")    
-        # Update user requirements based on context
+
         update_preferences_with_context(self.user_requirements, extracted_prefs, context_stage)
         
-        # Normalize slot values to match CSV format
+        # normalize slot values to match CSV format
         self._normalize_slot_values()
         
-        # Log all changes and results
+
         log_preference_changes(extracted_prefs, self.user_requirements, old_prefs, [])
 
     def check_next_stage(self): 
-        # Normalize slot values before any checks
+
         self._normalize_slot_values()
         
         if not self.user_requirements['area']:
@@ -166,7 +199,22 @@ class RestaurantSystem:
         elif not self.user_requirements['food']:
             return self.states['ASK_FOOD_TYPE']
         else:
-            return self.states['CONFIRM']
+            # all basic reqs collected, search for restaurants
+            print("[All basic preferences collected. Searching restaurant database...]")
+            self.search_restaurants()
+            
+            # check if any restaurants found
+            if not self.current_restaurant:
+                print("[No restaurants found matching basic criteria]")
+                return self.states['APOLOGIZE']
+            
+            # calculate total matches (current + alternatives)
+            total_matches = 1 + len(self.alternatives)
+            print(f"[Found {total_matches} restaurant(s) matching criteria]")
+            
+            # always ask for additional requirements to allow user to narrow down selection
+            print("[Proceeding to collect additional requirements]")
+            return self.states['ASK_ADDITIONAL_REQUIREMENTS']
     
     def search_restaurants(self): 
         filters = {
@@ -187,20 +235,18 @@ class RestaurantSystem:
             else:
                 self.current_restaurant = None
             
-            self.alternatives = [alt['restaurantname'] for alt in alternatives]
+            self.alternatives = alternatives
             self.suggestion_index = 0
         else:
             self.current_restaurant = None
             self.alternatives = []
     
     def apply_inference_filtering(self):
-        """
-        Apply inference rules to filter restaurants based on additional requirements.
-        """
+        """apply inference rules to filter restaurants based on additional reqs"""
         if not self.additional_requirements:
             return
         
-        # Get active additional requirements (non-None values)
+        # get active additional reqs (non-None values)
         active_requirements = {k: v for k, v in self.additional_requirements.items() if v is not None}
         
         if not active_requirements:
@@ -208,58 +254,57 @@ class RestaurantSystem:
         
         print(f"[Applying inference rules with requirements: {active_requirements}]")
         
-        # Get all candidate restaurants (current + alternatives)
+        # get all candidate restaurants (current + alternatives)
         all_candidates = []
         if self.current_restaurant:
             all_candidates.append(self.current_restaurant)
         
-        # Convert alternatives to full restaurant objects
+        # convert alternatives to full restaurant objects
         for alt in self.alternatives:
             if isinstance(alt, dict):
-                # Alternative is already a full restaurant object
                 all_candidates.append(alt)
             else:
-                # Alternative is just a name, look it up
-                alt_row = self.restaurant_lookup.df[
-                    self.restaurant_lookup.df['restaurantname'].str.lower() == alt.lower()
-                ]
-                if not alt_row.empty:
-                    all_candidates.append(alt_row.iloc[0].to_dict())
+                found = self.restaurant_lookup.find_restaurant_by_name(alt)
+                if found:
+                    all_candidates.append(found)
         
-        # Filter restaurants using inference engine
+        # filter restaurants using inference engine
         filter_result = self.inference_engine.filter_restaurants_by_requirements(
             all_candidates, active_requirements
         )
         
-        # Handle romantic conflicts
+        # handle romantic conflicts
         if filter_result['has_romantic_conflicts']:
-            # Store conflict restaurants for user resolution
-            self.romantic_conflicts = filter_result['conflict_restaurants']
+            # store conflict restaurants for user resolution
+            self.romantic_conflicts = filter_result['romantic_conflict_restaurants']
             print(f"[Found {len(self.romantic_conflicts)} restaurants with romantic conflicts]")
-            return  # Will be handled in conversation state
+            return  # will be handled in conversation state
+        
+        # handle touristic conflicts
+        if filter_result['has_touristic_conflicts']:
+            # store conflict restaurants for user resolution
+            self.touristic_conflicts = filter_result['touristic_conflict_restaurants']
+            print(f"[Found {len(self.touristic_conflicts)} restaurants with touristic conflicts]")
+            return  # will be handled in conversation state
         
         filtered_restaurants = filter_result['restaurants']
         print(f"[Filtered from {len(all_candidates)} to {len(filtered_restaurants)} restaurants]")
         
         if filtered_restaurants:
-            # Update current restaurant to first filtered result
+            # update current restaurant to first filtered result
             self.current_restaurant = filtered_restaurants[0]
             self.current_restaurant_name = filtered_restaurants[0]['restaurantname']
             
-            # Update alternatives with remaining filtered restaurants
+            # update alternatives with remaining filtered restaurants
             remaining_restaurants = filtered_restaurants[1:]
-            self.alternatives = []
-            for r in remaining_restaurants:
-                if isinstance(r, dict) and 'restaurantname' in r:
-                    self.alternatives.append(r['restaurantname'])
-                else:
-                    self.alternatives.append(str(r))
+            self.alternatives = remaining_restaurants  # store full restaurant dicts
             self.suggestion_index = 0
             
             print(f"[Updated current restaurant: {self.current_restaurant_name}]")
-            print(f"[Updated alternatives: {self.alternatives}]")
+            alt_names = [r.get('restaurantname', 'Unknown') for r in self.alternatives if isinstance(r, dict)]
+            print(f"[Updated alternatives: {alt_names}]")
         else:
-            # No restaurants meet the additional requirements
+            # no restaurants meet the additional reqs
             self.current_restaurant = None
             self.current_restaurant_name = None
             self.alternatives = []
@@ -267,15 +312,17 @@ class RestaurantSystem:
     
     def provide_restaurant_info(self, user_input: str): 
         if not self.current_restaurant:
-            print("System: I'm sorry, I don't have any restaurant information available to provide details.")
-            return self.states['INFORM']
+            no_info_msg = "I'm sorry, I don't have any restaurant information available to provide details."
+            print(f"System: {self.format_output(no_info_msg)}")
+            return self.states['APOLOGIZE']  # changed from INFORM
         
         try:
             response = format_restaurant_info_response(self.current_restaurant, user_input)
-            print(f"System: {response}")
+            print(f"System: {self.format_output(response)}")
         except Exception as e:
-            print(f"System: I'm sorry, I'm having trouble accessing the restaurant information right now. Error: {e}")
-            return self.states['INFORM']
+            error_msg = f"I'm sorry, I'm having trouble accessing the restaurant information right now. Error: {e}"
+            print(f"System: {self.format_output(error_msg)}")
+            return self.states['APOLOGIZE']  # changed from INFORM
         
         return 'await_next_request'
     
@@ -283,18 +330,28 @@ class RestaurantSystem:
         if self.alternatives and self.suggestion_index < len(self.alternatives):
             alt_restaurant_dict = self.alternatives[self.suggestion_index]
             
-            # Ensure we have a proper dictionary
+            # ensure we have a proper dict
             if not isinstance(alt_restaurant_dict, dict):
-                print("System: I'm sorry, there was an error processing the alternative restaurant.")
-                return self.states['INFORM']
+                # if it's a string (restaurant name), look it up in the database
+                restaurant_name = alt_restaurant_dict
+                restaurant_row = self.restaurant_lookup.df[
+                    self.restaurant_lookup.df['restaurantname'].str.lower() == restaurant_name.lower()
+                ]
+                if not restaurant_row.empty:
+                    alt_restaurant_dict = restaurant_row.iloc[0].to_dict()
+                else:
+                    error_msg = "I'm sorry, there was an error processing the alternative restaurant."
+                    print(f"System: {self.format_output(error_msg)}")
+                    return self.states['APOLOGIZE']  # changed from INFORM
                 
             self.current_restaurant = alt_restaurant_dict
             self.current_restaurant_name = alt_restaurant_dict.get('restaurantname', 'Unknown Restaurant')
             self.suggestion_index += 1
             return self.states['SUGGEST_RESTAURANT']
         else:
-            print("System: I'm sorry, I don't have any more alternatives to suggest.")
-            return self.states['INFORM']
+            no_more_msg = "I'm sorry, I don't have any more alternatives to suggest."
+            print(f"System: {self.format_output(no_more_msg)}")
+            return self.states['APOLOGIZE']  # changed from INFORM
     
     def run_conversation(self): 
         self._print_conversation_header()
@@ -328,7 +385,7 @@ class RestaurantSystem:
         print(f"\n--- Turn {self.conversation_turn} ---")
         print(f"[Current State: {current_state_name}]\n")
         
-        # Execute current state and get next state
+        # execute current state and get next state
         self.current_state = execute_conversation_state(self, self.current_state, self.states)
         
         if self.current_state and not self.conversation_ended:
@@ -336,5 +393,5 @@ class RestaurantSystem:
  
 if __name__ == "__main__":
     system = RestaurantSystem()
-    system.ensure_model_ready()  # This will load existing model or train new one
+    system.ensure_model_ready()  # load existing model or train new one
     system.run_conversation()

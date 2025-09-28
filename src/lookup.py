@@ -9,6 +9,8 @@ class RestaurantLookup:
     def __init__(self, csv_path: str = "data/restaurant_info.csv"):
         self.csv_path = csv_path
         self.df = pd.read_csv(self.csv_path)
+        # Replace NaN values with None for better handling
+        self.df = self.df.where(pd.notnull(self.df), None)
 
     def lookup(self, filters):
         """
