@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 
 def print_misclassifications(y_true, y_pred, utterances, model_name="Model", dataset_name="Dataset"):
     """
-    Print misclassified utterances with predicted and actual labels.
+    Print misclassification analysis with utterances.
+    
+    Input: y_true, y_pred (lists), utterances (list), model_name, dataset_name (strings)
     """
     print(f"\n-- Misclassifications for {model_name} on {dataset_name} --")
     errors = 0
@@ -21,9 +23,9 @@ def print_misclassifications(y_true, y_pred, utterances, model_name="Model", dat
 
 def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_name="Dataset"):
     """
-    Summarize misclassification patterns by showing how often each true label was confused with other labels.
-    Counts misclassifications grouped by (actual -> predicted).
-    Prints a summary showing how many times each true class was confused with specific predicted classes.
+    Summarize misclassification patterns by confusion frequency.
+    
+    Input: y_true, y_pred (lists), model_name, dataset_name (strings)
     """
     print(f"\n-- Misclassification Summary for {model_name} on {dataset_name} --")
     errors = defaultdict(Counter)
@@ -42,7 +44,9 @@ def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_nam
 
 def plot_confusion_matrix(y_true, y_pred, labels, model_name):
     """
-    Plots a labeled confusion matrix for a model's predictions.
+    Generate labeled confusion matrix heatmap.
+    
+    Input: y_true, y_pred (lists), labels (list), model_name (string)
     """    
     cm = confusion_matrix(y_true, y_pred, labels=labels)
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -68,13 +72,11 @@ def plot_confusion_matrix(y_true, y_pred, labels, model_name):
 
 def print_detailed_metrics(y_true, y_pred, model_name):
     """
-    Print detailed evaluation metrics for a classification model:
-      - Accuracy
-      - Per-class precision, recall, F1-score, and support
-      - Macro and weighted averages
-      - Confusion matrix plot
+    Print comprehensive classification metrics and confusion matrix.
+    
+    Input: y_true, y_pred (lists), model_name (string)
     """
-    #Define the set of valid dialog acts (used to fix class order)
+    # Fixed order of dialog acts for consistent evaluation
     VALID_ACTS = [
         "ack", "affirm", "bye", "confirm", "deny", "hello", "inform", "negate",
         "null", "repeat", "reqalts", "reqmore", "request", "restart", "thankyou"
@@ -105,7 +107,7 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     macro_recall = np.mean(recall)
     macro_f1 = np.mean(f1)
     
-    #Weighted averages
+    # Handle edge case for weighted averages when no support
     if support.sum() == 0:
         weighted_precision = 0.0
         weighted_recall = 0.0
@@ -124,10 +126,10 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     
 def print_model_comparison(results):
     """
-Compare multiple models by printing their accuracy, macro F1, and weighted F1 scores.
-Takes as input "results" dictionary which maps model name -> (y_true, y_pred).
-Prints a formatted comparison table with accuracy, macro F1 and weighted F1 for each model.
-"""
+    Compare multiple models with accuracy and F1 metrics table.
+    
+    Input: results (dict) - model_name -> (y_true, y_pred) mapping 
+    """
     print(f"\n{'='*80}")
     print(f"MODEL COMPARISON")
     print(f"{'='*80}")
@@ -150,8 +152,9 @@ Prints a formatted comparison table with accuracy, macro F1 and weighted F1 for 
 
 def print_deduplication_analysis(results):
     """
-    For each supported model (Decision Tree, Logistic Regression, MLP, Gradient Boosting) retrieves accuracy on original and deduplicated datasets.
-    Prints a table showing accuracy for both versions and their difference.
+    Analyze impact of data deduplication on model performance.
+    
+    Input: results (dict) - model_name -> (y_true, y_pred) mapping 
     """
     print(f"\n{'='*60}")
     print(f"DEDUPLICATION IMPACT")
@@ -177,14 +180,9 @@ def print_deduplication_analysis(results):
 
 def full_evaluation(results, data=None):
     """
-    Runs a complete evaluation suite over all models.
-    Takes as input:
-        results (dict): Mapping model_name -> (y_true, y_pred).
-        data: Optional datasets used to print example misclassifications.
-              Expects keys 'orig' and 'dedup', each a tuple (train_labels, test_labels, train_utts, test_utts).
-    For each model: print detailed metrics (incl. confusion matrix).
-    If `data` provided: show a per-model summary of misclassification patterns and print up to 3 example misclassified utterances.
-    Prints cross-model comparison and deduplication impact tables.
+    Run complete evaluation suite across all models.
+    
+    Input: results (dict) - model results, data (optional) - dataset for misclassification examples 
     """
     print(f"\n{'#'*80}")
     print(f"DIALOG ACT CLASSIFICATION EVALUATION")
@@ -194,6 +192,7 @@ def full_evaluation(results, data=None):
         print_detailed_metrics(y_true, y_pred, model_name)
         
         if data:
+            # Determine dataset type and get corresponding utterances
             dataset_type = "Original" if "Original" in model_name else "Deduplicated"
             
             if "Original" in model_name:
