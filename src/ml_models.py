@@ -8,15 +8,16 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 def gradient_boosting_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     """
-    Train a Gradient Boosting classifier on bag-of-words features.
+    Train Gradient Boosting classifier for dialog act prediction.
+    
+    Input: train_acts, test_acts (labels), train_utterances, test_utterances (text), return_model (bool)
+    Output: predictions list OR (model, vectorizer) tuple if return_model=True
     """
-    #Vectorize text via bag-of-words (fit on train, apply to test)
     vectorizer = CountVectorizer()
     X_train = vectorizer.fit_transform(train_utterances)    
     X_test = vectorizer.transform(test_utterances) 
 
     clf = GradientBoostingClassifier(n_estimators=250, ccp_alpha=1e-10,random_state=42)
-
     clf.fit(X_train, train_acts)
     y_pred = clf.predict(X_test)
 
@@ -26,56 +27,68 @@ def gradient_boosting_classifier(train_acts, test_acts, train_utterances, test_u
 
 def decision_tree_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False):
     """
-    Train a Decision Tree classifier on n-gram bag-of-words features.
+    Train Decision Tree classifier using n-gram features (1-5 grams).
+    
+    Input: train_acts, test_acts (labels), train_utterances, test_utterances (text), return_model (bool)
+    Output: predictions list OR (model, vectorizer) tuple if return_model=True
     """
-    #Vectorize text into up-to-5-gram BoW features
     vectorizer = CountVectorizer(ngram_range=(1,5)) 
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
 
-    clf = DecisionTreeClassifier(ccp_alpha=1e-5,class_weight="balanced",random_state=42).fit(X_train, train_acts) 
-
+    clf = DecisionTreeClassifier(ccp_alpha=1e-5,class_weight="balanced",random_state=42)
     clf.fit(X_train, train_acts)  
     y_pred = clf.predict(X_test)
+    
     if return_model:
         return clf, vectorizer
     return y_pred
 
 def logistic_regression_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     """
-    Train a Logistic Regression  classifier on n-gram bag-of-words features and predict on the test set.
+    Train Logistic Regression classifier using unigram + bigram features.
+    
+    Input: train_acts, test_acts (labels), train_utterances, test_utterances (text), return_model (bool)
+    Output: predictions list OR (model, vectorizer) tuple if return_model=True
     """
-    #Bag-of-words with unigrams + bigrams
     vectorizer = CountVectorizer(ngram_range=(1,2)) 
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
 
-    clf = LogisticRegression(random_state=42).fit(X_train, train_acts)
-
+    clf = LogisticRegression(random_state=42)
+    clf.fit(X_train, train_acts)
     y_pred = clf.predict(X_test)
+    
     if return_model:
         return clf, vectorizer
     return y_pred
 
 def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances, return_model=False): 
     """
-    Train a feed-forward neural network MLP classifier on n-gram bag-of-words features and predict on the test set.
+    Train Multi-Layer Perceptron neural network for dialog act classification.
+    
+    Input: train_acts, test_acts (labels), train_utterances, test_utterances (text), return_model (bool)
+    Output: predictions list OR (model, vectorizer, label_encoder) tuple if return_model=True
     """
-    #Bag-of-words with unigrams + bigrams
     vectorizer = CountVectorizer(ngram_range=(1,2))
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances)
 
+    # Neural networks require numerical labels
     le = LabelEncoder()
     y_train = le.fit_transform(train_acts)
     y_test = le.transform(test_acts)
+    
+    # Handle class imbalance with sample weights
     sample_weights = compute_sample_weight('balanced', y_train)
 
     clf = MLPClassifier(hidden_layer_sizes=(256, 128), activation="relu", max_iter=300, random_state=42)
     clf.fit(X_train, y_train, sample_weight=sample_weights)
 
+    # Convert predictions back to original labels
     y_pred_int = clf.predict(X_test)
     y_pred = le.inverse_transform(y_pred_int)
+    
     if return_model:
         return clf, vectorizer, le
     return y_pred

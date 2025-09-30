@@ -1,16 +1,22 @@
 def majority_baseline_model(test_utterances, majority_label):
-    # Predicts the majority label for all test utterances (which is "inform" by default).
+    """
+    Simple baseline that predicts the same label for all utterances.
+    
+    Input: test_utterances (list of strings), majority_label (string)
+    Output: list of predictions (all identical to majority_label)
+    """
     return [majority_label] * len(test_utterances)
 
 
 def rules_baseline_model(test_utterances):
     """
-    Predicts labels using predefined keyword-matching rules.
-    If a keyword is found in the utterance, assigns the corresponding label.
-    If no rule matches, defaults to the majority class "inform".
+    Rule-based classifier using keyword matching for dialog act prediction.
+    
+    Input: test_utterances (list of strings)
+    Output: list of predicted dialog acts based on keyword rules
     """
 
-    #Each label has associated keywords or phrases
+    # Keyword-to-label mapping rules
     rules = {
             'affirm': ['yes', 'correct', 'right', 'yeah', 'ye'],
             'thankyou': ['thank you', 'thanks'],
@@ -26,28 +32,26 @@ def rules_baseline_model(test_utterances):
             'reqmore': ['more'],
             'restart': ['start'],
             'ack': ['okay', 'kay', 'okay um'] 
-
     }
-    majority_class = "inform"
+    default_class = "inform"
 
     predictions = []
     for utterance in test_utterances:
         u = utterance.lower()
         words = u.split()
-        prediction = majority_class
+        prediction = default_class
         found = False
 
         for label, keywords_list in rules.items():
             for keyword in keywords_list:
+                # Handle phrases vs single words differently
                 if " " in keyword:  
-                    #If keyword is a phrase search directly in the utterance
                     if keyword in u:
                         prediction = label
                         found = True
                         break
                 else:
                     if keyword in words:
-                        #Otherwise, check word-level match
                         prediction = label
                         found = True
                         break

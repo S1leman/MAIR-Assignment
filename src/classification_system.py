@@ -1,14 +1,16 @@
-import os
 from collections import Counter
-from utils import read_data, split_and_save_dataset, load_data
+from utils import load_data
 from baseline_models import majority_baseline_model, rules_baseline_model
 from ml_models import decision_tree_classifier, logistic_regression_classifier, mlp_classifier, gradient_boosting_classifier
 from evaluation import  full_evaluation
 
 def train_all_models(data):
     """
-    Train baseline and ML classifiers on original and deduplicated datasets.
-    """    
+    Train and evaluate all baseline and ML classifiers on both datasets.
+    
+    Input: data (dict) - contains 'orig' and 'dedup' dataset splits
+    Output: (results, models) tuple - evaluation results and trained model objects
+    """
     
     print("\nTraining and evaluating models...")
 
@@ -35,6 +37,7 @@ def train_all_models(data):
     #Predictions for original test set
     dt_pred_orig = dt_model_orig.predict(dt_vectorizer_orig.transform(test_utts_orig))
     lr_pred_orig = lr_model_orig.predict(lr_vectorizer_orig.transform(test_utts_orig))
+    # MLP requires special handling: convert to dense array and decode labels
     mlp_pred_orig_int = mlp_model_orig.predict(mlp_vectorizer_orig.transform(test_utts_orig).toarray())
     mlp_pred_orig = mlp_le_orig.inverse_transform(mlp_pred_orig_int)
     gb_pred_orig = gb_model_orig.predict(gb_vectorizer_orig.transform(test_utts_orig))
@@ -51,6 +54,7 @@ def train_all_models(data):
     #Predictions for deduplicated test set
     dt_pred_dedup = dt_model_dedup.predict(dt_vectorizer_dedup.transform(test_utts_dedup))
     lr_pred_dedup = lr_model_dedup.predict(lr_vectorizer_dedup.transform(test_utts_dedup))
+    # MLP requires dense array conversion and label decoding
     mlp_pred_dedup_int = mlp_model_dedup.predict(mlp_vectorizer_dedup.transform(test_utts_dedup).toarray())
     mlp_pred_dedup = mlp_le_dedup.inverse_transform(mlp_pred_dedup_int)
     gb_pred_dedup = gb_model_dedup.predict(gb_vectorizer_dedup.transform(test_utts_dedup))
@@ -85,10 +89,9 @@ def train_all_models(data):
   
 def choose_dataset_and_model():
     """
-    Asks user to choose a dataset (original or deduplicated) and then select a classifier for prediction.
-    Returns a tuple:
-        suffix: "orig" or "dedup" depending on dataset choice, or None if exit.
-        choice: User's classifier menu choice, or None if exit.
+    Interactive menu for dataset and classifier selection.
+    
+    Output: (suffix, choice) tuple - dataset type and classifier choice, or (None, None) to exit
     """
     #Dataset selection menu
     while True:
@@ -109,7 +112,7 @@ def choose_dataset_and_model():
             if suffix == "orig":
                 print(f"\nAvailable classifiers for Original data:")
                 print("1. Majority Baseline")
-                print("2. Rules Baseline")
+                print("2. Rules Baseline")    
                 print("3. Decision Tree")
                 print("4. Logistic Regression")
                 print("5. MLP")
@@ -135,11 +138,9 @@ def choose_dataset_and_model():
 
 def interactive_classification(models):
     """
-    Launch an interactive CLI loop for classifying user-entered utterances.
-    Takes as input "models" dictionary of trained models, vectorizers, and label encoders.
-    Lets the user choose dataset (original/deduplicated) and classifier.
-    Accepts free-text utterances, predicts dialog acts, and prints results.
-    Supports 'back' to change model/dataset and 'quit'/'exit' to terminate.
+    Interactive CLI for real-time utterance classification.
+    
+    Input: models (dict) - trained classifiers, vectorizers, and label encoders
     """
     print(f"\n{'='*60}")
     print("INTERACTIVE CLASSIFICATION")
@@ -189,6 +190,7 @@ def interactive_classification(models):
                         X = models['lr_vectorizer_orig'].transform([utterance])
                         prediction = models['lr_model_orig'].predict(X)[0]
                     elif choice == "5":
+                        # MLP needs dense array and argmax for single prediction
                         X = models['mlp_vectorizer_orig'].transform([utterance]).toarray()
                         pred_int = models['mlp_model_orig'].predict(X).argmax(axis=1)[0]
                         prediction = models['mlp_le_orig'].inverse_transform([pred_int])[0]
@@ -203,6 +205,7 @@ def interactive_classification(models):
                         X = models['lr_vectorizer_dedup'].transform([utterance])
                         prediction = models['lr_model_dedup'].predict(X)[0]
                     elif choice == "3":
+                        # MLP needs dense array and argmax for single prediction
                         X = models['mlp_vectorizer_dedup'].transform([utterance]).toarray()
                         pred_int = models['mlp_model_dedup'].predict(X).argmax(axis=1)[0]
                         prediction = models['mlp_le_dedup'].inverse_transform([pred_int])[0]
@@ -215,12 +218,8 @@ def interactive_classification(models):
 
 def main():
     """
-    Entry point for the Dialog Act Classification System.
-    Loads datasets (original and deduplicated).
-    Trains baseline and ML models, and gather predictions.
-    Runs evaluation on all models.
-    Starts interactive classification session.
-    """    
+    Main entry point for the classification system.
+    """
     print("DIALOG ACT CLASSIFICATION SYSTEM")
     print("="*60)
     
