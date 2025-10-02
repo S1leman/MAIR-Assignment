@@ -2,7 +2,7 @@ restaurantname,pricerange,area,food,phone,addr,postcode,food_quality,crowdedness
 saint johns chop house,moderate,west,british,01223 353110,21 - 24 northampton street,c.b 3,bad,busy,short
 restaurant alimentum,moderate,north,modern european,01223 413000,152 - 154 hills road,c.b 2,good,busy,short
 pizza hut cherry hinton,moderate,south,italian,01223 323737,g4 cambridge leisure park clifton way cherry hinton,c.b 1,bad,not busy,long
-the gardenia,moderate,west,romanian,01223 356354,2 rose crescent city centre,c.b 2,bad,not busy,long
+the gardenia,cheap,west,romanian,01223 356354,2 rose crescent city centre,c.b 2,good,not busy,long
 loch fyne,moderate,centre,seafood,01223 362433,the little rose 37 trumpington street,c.b 2,bad,busy,long
 yu garden,expensive,east,chinese,01223 248882,529 newmarket road fen ditton,c.b 5,good,not busy,long
 sitar tandoori,expensive,east,steakhouse,01223 249955,43 high street cherry hinton cherry hinton,c.b 1,bad,busy,long
@@ -10,7 +10,7 @@ saigon city,expensive,north,asian oriental,01223 356555,169 high street chestert
 restaurant two two,expensive,north,french,01223 351880,22 chesterton road chesterton,c.b 4,bad,busy,short
 the hotpot,expensive,north,chinese,01223 366552,66 chesterton road chesterton,c.b 4,good,busy,long
 nandos,cheap,south,portuguese,01223 327908,cambridge leisure park clifton way,c.b 1,bad,not busy,short
-peking restaurant,expensive,south,chinese,01223 354755,10 homerton street city centre,c.b 2,bad,busy,short
+peking restaurant,cheap,south,chinese,01223 354755,10 homerton street city centre,c.b 2,bad,busy,short
 rajmahal,moderate,east,indian,01223 244955,7 barnwell road fen ditton,c.b 5,bad,not busy,long
 pizza hut fen ditton,moderate,east,italian,01223 323737,cambridge retail park newmarket road fen ditton,c.b 5,bad,busy,long
 the missing sock,cheap,south,chinese,01223 812660,finders corner newmarket road,c.b 25,good,not busy,long
