@@ -1,7 +1,15 @@
 from state_transition import RestaurantSystem
 
+
 def main():
-    # display welcome header and initialize system
+    """
+    The function performs the following operations:
+    1. System initialization and welcome display
+    2. User configuration (classifier, restart policy, output format)
+    3. Model loading/training
+    4. Conversation execution with error handling
+    5. Resource cleanup
+    """ 
     print("\n" + "="*60)
     print("CAMBRIDGE RESTAURANT RECOMMENDATION SYSTEM")
     print("="*60)
@@ -12,7 +20,7 @@ def main():
     print("SYSTEM CONFIGURATION")
     print("-"*40)
     
-    # get classifier choice from user
+    # Configure classifier type based on user preference 
     print("\nChoose Classifier Type:")
     print("  1 - Machine Learning (MLP) - Most accurate")
     print("  2 - Majority Baseline - Simple baseline")  
@@ -30,7 +38,7 @@ def main():
         system.classifier_type = "mlp"
         print("  Using Machine Learning (MLP) classifier")
     
-    # configure restart policy
+    # Configure conversation flow policy 
     print("\nDialog Restart Policy:")
     print("  1 - Allow restarts - Users can start over anytime")
     print("  2 - No restarts - Linear conversation flow only")
@@ -44,7 +52,7 @@ def main():
         system.allow_restarts = True
         print("  Restarts enabled - Flexible conversation")
     
-    # configure output format
+    # Configure output formatting for accessibility/preference needs
     print("\nOutput Format:")
     print("  1 - Normal case - Standard capitalization")
     print("  2 - ALL CAPS - All system output in uppercase")
@@ -58,33 +66,10 @@ def main():
         system.output_caps = False
         print("  Normal case output enabled")
     
-    # configure text-to-speech
-    print("\nText-to-Speech:")
-    print("  1 - Disabled - Text output only")
-    print("  2 - Enabled - System will speak responses aloud")
-    
-    tts_choice = input("\nEnter your choice (1/2) [default: 1]: ").strip()
-    
-    if tts_choice == "2":
-        try:
-            system.use_tts = True
-            system.initialize_tts()
-            print("  Text-to-speech ENABLED")
-        except ImportError:
-            print("  WARNING: pyttsx3 not installed. TTS disabled.")
-            print("  Install with: pip install pyttsx3")
-            system.use_tts = False
-        except Exception as e:
-            print(f"  WARNING: TTS initialization failed: {e}")
-            print("  Continuing with text-only output")
-            system.use_tts = False
-    else:
-        system.use_tts = False
-        print("  Text-to-speech disabled")
-    
-    # load or train the classifier model
+    # Initialize machine learning model or load pre-trained weights 
     system.ensure_model_ready()
     
+    # Display system readiness and user navigation options
     print("\n" + "-"*40)
     print("System Ready!")
     print("-"*40)
@@ -96,27 +81,20 @@ def main():
     
     if system.output_caps:
         print("  - System responses will be in ALL CAPS")
-    if system.use_tts:
-        print("  - System will speak responses aloud")
     
     print("\n" + "="*60 + "\n")
-    
+     
     try:
         system.run_conversation()
     except KeyboardInterrupt:
+        # Handle shutdown on user interrupt (Ctrl+C)
         print("\n\nThank you for using the Cambridge Restaurant System!")
         print("Have a great day!\n")
-    except Exception as e:
+    except Exception as e: 
         print(f"\nError during conversation: {e}") 
         import traceback
         traceback.print_exc()
-    finally:
-        # cleanup TTS engine if it was initialized
-        if hasattr(system, 'tts_engine') and system.tts_engine:
-            try:
-                system.tts_engine.stop()
-            except:
-                pass
+
 
 if __name__ == "__main__":
     main()
