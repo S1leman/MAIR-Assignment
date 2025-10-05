@@ -190,9 +190,9 @@ def interactive_classification(models):
                         X = models['lr_vectorizer_orig'].transform([utterance])
                         prediction = models['lr_model_orig'].predict(X)[0]
                     elif choice == "5":
-                        # MLP needs dense array and argmax for single prediction
+                        # MLP prediction - model.predict() returns class indices directly
                         X = models['mlp_vectorizer_orig'].transform([utterance]).toarray()
-                        pred_int = models['mlp_model_orig'].predict(X).argmax(axis=1)[0]
+                        pred_int = models['mlp_model_orig'].predict(X)[0]
                         prediction = models['mlp_le_orig'].inverse_transform([pred_int])[0]
                     elif choice == "6":
                         X = models['gb_vectorizer_orig'].transform([utterance])
@@ -205,9 +205,9 @@ def interactive_classification(models):
                         X = models['lr_vectorizer_dedup'].transform([utterance])
                         prediction = models['lr_model_dedup'].predict(X)[0]
                     elif choice == "3":
-                        # MLP needs dense array and argmax for single prediction
+                        # MLP prediction - model.predict() returns class indices directly
                         X = models['mlp_vectorizer_dedup'].transform([utterance]).toarray()
-                        pred_int = models['mlp_model_dedup'].predict(X).argmax(axis=1)[0]
+                        pred_int = models['mlp_model_dedup'].predict(X)[0]
                         prediction = models['mlp_le_dedup'].inverse_transform([pred_int])[0]
                     elif choice == "4":
                         X = models['gb_vectorizer_dedup'].transform([utterance])

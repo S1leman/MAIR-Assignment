@@ -55,12 +55,7 @@ pip install -r requirements.txt
 
 #### 3. Verify data files exist
 ```bash
-ls data/restaurant_info.csv data/dialog_acts.dat
-```
-
-#### 4. Generate extended restaurant data (first time only)
-```bash
-cd src && python -c "from utils import build_restaurant_info; build_restaurant_info()"
+ls data/restaurant_info.csv data/dialog_acts.dat data/restaurant_info_updated.csv
 ```
 
 ---
@@ -68,7 +63,7 @@ cd src && python -c "from utils import build_restaurant_info; build_restaurant_i
 ## Quick Start
 
 ```bash
-cd src && python dialog_system.py
+python src/dialog_system.py
 ```
 Follow the prompts to configure the system, then start chatting!
 
@@ -81,25 +76,23 @@ Follow the prompts to configure the system, then start chatting!
 Start the interactive dialog system:
 
 ```bash
-cd src && python dialog_system.py
+python src/dialog_system.py 
 ```
 
 **Configuration options during startup:**
-1. Classifier Selection:
 
-1 - MLP (Multi-Layer Perceptron) - Recommended (~97% accuracy)
-2 - Majority Baseline (Simple baseline)
-3 - Rules Baseline (Keyword-based)
+**1. Classifier Selection:**
+- `1` - MLP (Multi-Layer Perceptron) - Recommended (~97% accuracy)
+- `2` - Majority Baseline (Simple baseline)
+- `3` - Rules Baseline (Keyword-based)
 
-2. Restart Policy:
+**2. Restart Policy:**
+- `1` - Allow restarts (users can type "restart" anytime)
+- `2` - No restarts (linear flow only)
 
-1 - Allow restarts (users can type "restart" anytime)
-2 - No restarts (linear flow only)
-
-3. Output Format:
-
-1 - Normal case
-2 - ALL CAPS (accessibility mode)
+**3. Output Format:**
+- `1` - Normal case
+- `2` - ALL CAPS (accessibility mode)
 
 **Navigation commands:**
 
@@ -112,7 +105,7 @@ cd src && python dialog_system.py
 Train and evaluate all classifiers:
 
 ```bash
-cd src && python classification_system.py
+python src/classification_system.py
 ```
 **What it does:**
 
@@ -136,28 +129,9 @@ Enter utterance: what's the phone number
 Predicted: request
 ```
 
-### Inference Engine Demo
-
-See conflict detection in action:
-
-```bash
-cd src && python inference_engine.py
-```
-**Demonstrates:**
-
-- Romantic conflict (busy vs. long stay)
-- Touristic conflict (cheap + good vs. Romanian cuisine)
-
-**Example output:**
-
-```
-INFERENCE ENGINE - CONFLICT DEMONSTRATION
---- Example 1: Romantic Conflict ---
-Restaurant: The Busy Romantic
-Conflict on: romantic
-  Rule 5: → romantic = False (busy restaurant not romantic)
-  Rule 6: → romantic = True (long stay is romantic)
-```
+**Navigation:**
+- Type `back` to change model/dataset
+- Type `exit` or `quit` to leave the system
 
 ---
 
@@ -331,7 +305,7 @@ System: I recommend 'Bella Italia', it is cheap italian restaurant in
 #### Price Ranges
 - cheap, moderate, expensive, moderately priced, any price, don't care
 
-#### Food Types (36 cuisines)
+#### Food Types
 - italian, chinese, indian, french, british, spanish, thai, japanese, korean, vietnamese, turkish, moroccan, mediterranean, seafood, steakhouse, ...
 
 #### Additional Requirements
@@ -448,13 +422,7 @@ pip install --upgrade -r requirements.txt
 
 ```bash
 ls -la data/
-# Should show: restaurant_info.csv and dialog_acts.dat
-```
-
-If `restaurant_info_updated.csv` is missing:
-
-```bash
-cd src && python -c "from utils import build_restaurant_info; build_restaurant_info()"
+# Should show: restaurant_info.csv and dialog_acts.dat restaurant_info_updated.csv
 ```
 
 ### Conversation stuck in loop
