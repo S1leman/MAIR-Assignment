@@ -166,7 +166,8 @@ Start the interactive dialog system:
 
 ```bash
 python src/dialog_system.py 
-```**Configuration options during startup:**
+```
+**Configuration options during startup:**
 
 **1. Classifier Selection:**
 - `1` - MLP (Multi-Layer Perceptron) - Recommended (~97% accuracy)
