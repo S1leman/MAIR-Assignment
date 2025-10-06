@@ -77,6 +77,45 @@ Follow the prompts to configure the system, then start chatting!
 
 ## Usage
 
+### Inference Engine Demo
+
+Explore how rule-based reasoning and conflict detection work:
+
+```bash
+python src/inference_engine.py
+```
+
+**What it demonstrates:**
+
+- **Conflict Detection**: Watch conflicting rules get identified automatically  
+- **Conflict Types**: Both romantic conflicts (Rules 5 vs 6) and touristic conflicts (Rules 1 vs 2)
+- **Real Examples**: Four practical scenarios with restaurant data
+
+**Sample Output:**
+```
+1. NO CONFLICT EXAMPLE:
+Restaurant: Da Vinci Pizzeria (cheap + good + italian)
+Inferred properties: {'touristic': True}
+Has conflict: False
+Reasoning: ['Rule 1: a cheap restaurant with good food attracts tourists']
+
+2. ROMANTIC CONFLICT EXAMPLE:  
+Restaurant: Le Bistro (busy + long stays)
+Inferred properties: {'assigned_seats': True, 'children': False}
+Has conflict: True
+Conflict on: romantic
+Rule 5: a busy restaurant is not romantic → romantic=False
+Rule 6: spending a long time in a restaurant is romantic → romantic=True
+```
+
+**Rules Explained:**
+1. `(cheap AND good food) → touristic = True`
+2. `romanian cuisine → touristic = False` 
+3. `busy → assigned_seats = True`
+4. `long stays → children = False`
+5. `busy → romantic = False` ⚡ *conflicts with Rule 6*
+6. `long stays → romantic = True` ⚡ *conflicts with Rule 5*
+
 ### Main Dialog System
 
 Start the interactive dialog system:

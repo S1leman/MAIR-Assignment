@@ -3,12 +3,6 @@ import Levenshtein
 
 
 class PreferenceExtractor:
-    """
-    Extract restaurant preferences from user utterances using multiple strategies.
-    
-    Features: exact matching, regex patterns, fuzzy matching, "don't care" detection
-    """
-
     food_types = [
     'british', 'modern european', 'italian', 'romanian', 'seafood', 'chinese',
     'steakhouse', 'asian oriental', 'french', 'portuguese', 'indian', 'spanish',
@@ -67,11 +61,10 @@ class PreferenceExtractor:
         ]
         utterance_lower = utterance.lower().strip()
         
-        # Check for exact matches with primary patterns
         if utterance_lower in dontcare_patterns:
             return True
         
-        # Check for contextual variations with common suffixes
+        # Variations with common suffixes
         for pattern in dontcare_patterns:
             if utterance_lower == pattern or utterance_lower == f"{pattern} is fine" or \
                utterance_lower == f"{pattern} is good" or utterance_lower == f"{pattern} is ok":
@@ -108,27 +101,27 @@ class PreferenceExtractor:
         """
         utt = utterance.lower()
         
-        # Priority 1: Context-aware "don't care" detection for food type questions
+        # Context-aware "don't care" detection for food type questions
         if context == 'ASK_FOOD_TYPE' and PreferenceExtractor.is_dontcare_response(utterance):
             preference["food"] = 'dontcare'
             return preference
         
         potential_food_type = ''
 
-        # Priority 2: Regex pattern definitions for structured extraction
+        # Regex pattern definitions for structured extraction
         patterns = [
             r"(\w+)\s+food",                # Pattern: "<cuisine> food"
             r"(\w+)\s+restaurant",          # Pattern: "<cuisine> restaurant"
             r"\b(\w+(?:\s+\w+)?)\b"        # Pattern: General word/phrase extraction
         ]
 
-        # Priority 3: Exact token matching for precise food type identification
+        # Exact token matching for precise food type identification
         for word in utt.split():
             if word in PreferenceExtractor.food_types:
                 preference["food"] = word
                 return preference
 
-        # Priority 4: Regex-based candidate extraction and validation
+        # Regex-based candidate extraction and validation
         for patt in patterns:
             match = re.search(patt, utt)
             if match:
@@ -137,14 +130,13 @@ class PreferenceExtractor:
                     preference["food"] = potential_food_type
                     return preference
 
-        # Priority 5: Fuzzy matching for typo tolerance (minimum 4 characters)
         if len(potential_food_type) >= 4:
             closest = PreferenceExtractor.closest_term(potential_food_type, PreferenceExtractor.food_types)
             if closest:
                 preference["food"] = closest
                 return preference
 
-        # Priority 6: Specialized "don't care" phrase detection for food context
+        # Specialized "don't care" phrase detection for food context
         food_dontcare = ['any food', 'any type of food', 'any cuisine', 'doesnt matter what food', 
                         "doesn't matter what food", 'whatever food', 'anything to eat', 'any type',
                         'any kind of food', 'any kind']
@@ -164,7 +156,7 @@ class PreferenceExtractor:
         """
         utt = utterance.lower()
         
-        # Priority 1: Context-aware "don't care" detection for price questions
+        # Context-aware "don't care" detection for price questions
         if context == 'ASK_PRICE' and PreferenceExtractor.is_dontcare_response(utterance):
             preference["price"] = 'dontcare'
             return preference
@@ -179,7 +171,7 @@ class PreferenceExtractor:
             r"\b(\w+(?:\s+\w+)?)\b"        # Pattern: General word/phrase extraction
         ]
         
-        # Priority 2: Exact token matching for standard price terms
+        # Exact token matching for standard price terms
         for word in utt.split():
             if word in PreferenceExtractor.price_ranges:
                 preference["price"] = word
@@ -189,20 +181,19 @@ class PreferenceExtractor:
                 preference["price"] = "moderate"
                 return preference
 
-        # Priority 3: Regex-based candidate extraction with fuzzy matching
+        # Regex-based candidate extraction with fuzzy matching
         for patt in patterns:
             match = re.search(patt, utt)
             if match:
                 potential_price = match.group(1).strip()
 
-            # Apply fuzzy matching for longer candidates
             if len(potential_price) >= 4:
                 closest = PreferenceExtractor.closest_term(potential_price, PreferenceExtractor.price_ranges)
                 if closest:
                     preference["price"] = closest
                     return preference
 
-        # Priority 4: Specialized "don't care" phrase detection for price context
+        # Specialized "don't care" phrase detection for price context
         price_dontcare = ['any price', 'any price range', 'any budget', 'whatever price', 
                          'any cost', 'doesnt matter how much', "doesn't matter how much",
                          "doesn't matter what it costs", "doesnt matter what it costs",
@@ -224,7 +215,7 @@ class PreferenceExtractor:
         """
         utt = utterance.lower()
         
-        # Priority 1: Context-aware "don't care" detection for area questions
+        # Context-aware "don't care" detection for area questions
         if context == 'ASK_AREA' and PreferenceExtractor.is_dontcare_response(utterance):
             preference["area"] = 'dontcare'
             return preference
@@ -240,13 +231,13 @@ class PreferenceExtractor:
             r"\b(\w+(?:\s+\w+)?)\b"                               # General word extraction
         ]
 
-        # Priority 2: Exact token matching for standard area terms
+        # Exact token matching for standard area terms
         for word in utt.split():
             if word in PreferenceExtractor.areas:
                 preference["area"] = word
                 return preference
 
-        # Priority 3: Regex-based pattern matching with fuzzy fallback
+        # Regex-based pattern matching with fuzzy fallback
         for patt in patterns_area:
             match = re.search(patt, utt)
             if match:
@@ -257,13 +248,12 @@ class PreferenceExtractor:
                     preference["area"] = potential_area
                     return preference
                 
-                # Apply fuzzy matching for potential typos
                 closest = PreferenceExtractor.closest_term(potential_area, PreferenceExtractor.areas)
                 if closest:
                     preference["area"] = closest
                     return preference
                 
-        # Priority 4: Specialized "don't care" phrase detection for area context
+        # Specialized "don't care" phrase detection for area context
         area_dontcare = ['any area', 'any part', 'anywhere', 'any part of town',
                         'any location', 'doesnt matter where', "doesn't matter where",
                         'location doesnt matter', "location doesn't matter"]
