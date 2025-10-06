@@ -1,13 +1,6 @@
 import pandas as pd
 
 class RestaurantLookup:
-    """
-    Loads a restaurant catalog from a CSV and performs filtered lookups.
-    
-    Input: CSV file path with restaurant data
-    Output: Restaurant names and alternative matches based on user filters
-    """
-    
     def __init__(self, csv_path: str = "data/restaurant_info.csv"):
         """
         Initialize restaurant lookup with CSV data.
