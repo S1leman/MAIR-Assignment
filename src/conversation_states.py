@@ -1,20 +1,13 @@
-"""
-Dialog State Management for Restaurant Recommendation System
-
-Input: User utterances and system state
-Output: Next dialog state
-"""
-
 from utils import format_restaurant_suggestion, detect_restart_command, detect_exit_command
 from preference_extraction import PreferenceExtractor
 
 
 class InputValidator:
-    """Validates user input and handles special commands."""
-    
     @staticmethod
     def validate_and_handle_special_commands(user_input, system):
         """
+        Check for exit and restart commands in user input.
+        
         Input: user_input (str), system (RestaurantSystem)
         Output: tuple (should_continue: bool, next_state: str or None)
         """
@@ -30,8 +23,9 @@ class InputValidator:
     @staticmethod
     def reset_system_state(system):
         """
+        Reset all user preferences and system state to initial values.
+        
         Input: system (RestaurantSystem)
-        Output: None (modifies system in place)
         """
         system.user_requirements = {'area': None, 'price': None, 'food': None}
         system.additional_requirements = {
@@ -51,67 +45,49 @@ class InputValidator:
 class ConflictResolver:
     """Resolves inference rule conflicts through user interaction."""
     
-    CONFLICT_CONFIGS = {
-        'romantic': {
-            'questions': [
-                "I found '{name}', but I need your help to determine if it's romantic.",
-                "This restaurant is both busy (less romantic) and allows long stays (more romantic).",
-                "Do you prefer a quiet atmosphere or the ability to stay for a long time?",
-                "Say 'quiet' for peaceful setting, or 'long stay' for leisurely meals."
-            ],
-            'preferences': {
-                'quiet': {
-                    'keywords': ['quiet', 'peaceful', 'calm', 'not busy'],
-                    'value': False,
-                    'explanation': "Since you prefer a quiet atmosphere, {name} is not romantic due to being busy"
-                },
-                'long_stay': {
-                    'keywords': ['long', 'stay', 'time', 'leisurely'],
-                    'value': True,
-                    'explanation': "Since you value long meals, {name} is romantic because you can take your time"
-                }
-            },
-            'default': 'long_stay'
-        },
-        'touristic': {
-            'questions': [
-                "I found '{name}', but I need your help to determine if it's touristic.",
-                "This restaurant offers good food at cheap prices (attracts tourists) but serves Romanian cuisine (unfamiliar to tourists).",
-                "What's more important - good value for money or familiar cuisine?",
-                "Say 'value' for good prices, or 'familiar' for well-known cuisines."
-            ],
-            'preferences': {
-                'value': {
-                    'keywords': ['value', 'price', 'cheap', 'affordable', 'good food', 'quality'],
-                    'value': True,
-                    'explanation': "Since you prioritize value, {name} is touristic due to its affordable quality"
-                },
-                'familiar': {
-                    'keywords': ['familiar', 'cuisine', 'food type', 'romanian', 'unfamiliar'],
-                    'value': False,
-                    'explanation': "Since you prefer familiar cuisine, {name} is not touristic (Romanian food is unfamiliar)"
-                }
-            },
-            'default': 'value'
-        }
-    }
+    @staticmethod
+    def get_romantic_questions(restaurant_name):
+        """Generate questions to resolve romantic conflict for a restaurant."""
+        return [
+            f"I found '{restaurant_name}', but I need your help to determine if it's romantic.",
+            "This restaurant is both busy (less romantic) and allows long stays (more romantic).",
+            "Do you prefer a quiet atmosphere or the ability to stay for a long time?",
+            "Say 'quiet' for peaceful setting, or 'long stay' for leisurely meals."
+        ]
+    
+    @staticmethod
+    def get_touristic_questions(restaurant_name):
+        """Generate questions to resolve touristic conflict for a restaurant."""
+        return [
+            f"I found '{restaurant_name}', but I need your help to determine if it's touristic.",
+            "This restaurant offers good food at cheap prices (attracts tourists) but serves Romanian cuisine (unfamiliar to tourists).",
+            "What's more important - good value for money or familiar cuisine?",
+            "Say 'value' for good prices, or 'familiar' for well-known cuisines."
+        ]
     
     @classmethod
     def present_conflict(cls, restaurant_name, conflict_type):
         """
+        Get appropriate conflict resolution questions based on type.
+        
         Input: restaurant_name (str), conflict_type (str)
         Output: list of str (questions to ask user)
         """
-        config = cls.CONFLICT_CONFIGS[conflict_type]
-        return [q.format(name=restaurant_name) for q in config['questions']]
+        if conflict_type == 'romantic':
+            return cls.get_romantic_questions(restaurant_name)
+        elif conflict_type == 'touristic':
+            return cls.get_touristic_questions(restaurant_name)
+        else:
+            return []
     
     @classmethod
     def resolve(cls, user_input, restaurant, conflict_type, user_requirement, allow_restarts=False):
         """
+        Process user response to conflict and determine resolution action.
+        
         Input: user_input (str), restaurant (dict), conflict_type (str), user_requirement (bool), allow_restarts (bool)
         Output: tuple (action: str, data: dict or str or None)
         """
-        config = cls.CONFLICT_CONFIGS[conflict_type]
         user_input_lower = user_input.lower()
         
         if any(kw in user_input_lower for kw in ['exit', 'quit', 'bye']):
@@ -121,10 +97,7 @@ class ConflictResolver:
         if any(kw in user_input_lower for kw in ['alternative', 'different', 'skip', 'next']):
             return ('skip', None)
         
-        matched_pref = cls._match_preference(user_input_lower, config)
-        pref_data = config['preferences'][matched_pref]
-        resolved_value = pref_data['value']
-        explanation = pref_data['explanation'].format(name=restaurant['restaurantname'])
+        resolved_value, explanation = cls._resolve_user_preference(user_input_lower, conflict_type, restaurant['restaurantname'])
         
         if resolved_value == user_requirement:
             cls._update_restaurant_with_resolution(restaurant, conflict_type, resolved_value, explanation)
@@ -134,21 +107,28 @@ class ConflictResolver:
             return ('reject', reject_msg)
     
     @classmethod
-    def _match_preference(cls, user_input_lower, config):
-        """
-        Input: user_input_lower (str), config (dict)
-        Output: str (matched preference name)
-        """
-        for pref_name, pref_data in config['preferences'].items():
-            if any(kw in user_input_lower for kw in pref_data['keywords']):
-                return pref_name
-        return config['default']
+    def _resolve_user_preference(cls, user_input_lower, conflict_type, restaurant_name):
+        """Determine user preference from input and generate explanation."""
+        if conflict_type == 'romantic':
+            if any(word in user_input_lower for word in ['quiet', 'peaceful', 'calm', 'not busy']):
+                return False, f"Since you prefer a quiet atmosphere, {restaurant_name} is not romantic due to being busy"
+            else:
+                return True, f"Since you value long meals, {restaurant_name} is romantic because you can take your time"
+        
+        elif conflict_type == 'touristic':
+            if any(word in user_input_lower for word in ['familiar', 'cuisine', 'food type', 'romanian', 'unfamiliar']):
+                return False, f"Since you prefer familiar cuisine, {restaurant_name} is not touristic (Romanian food is unfamiliar)"
+            else:
+                return True, f"Since you prioritize value, {restaurant_name} is touristic due to its affordable quality"
+        
+        return True, f"{restaurant_name} meets your requirements"
     
     @classmethod
     def _update_restaurant_with_resolution(cls, restaurant, conflict_type, resolved_value, explanation):
         """
+        Update restaurant data with conflict resolution results.
+        
         Input: restaurant (dict), conflict_type (str), resolved_value (bool), explanation (str)
-        Output: None (modifies restaurant in place)
         """
         restaurant[conflict_type] = resolved_value
         restaurant['conflict_resolution'] = explanation
@@ -164,14 +144,13 @@ class ConflictResolver:
 
 
 class ConversationStates:
-    """Manages dialog flow through discrete states."""
-    
     def __init__(self, system):
         self.system = system
     
-    def welcome(self):
+    def welcome(self):  # State 1
         """
-        Input: None (uses system state)
+        Handle initial welcome state and user's first input.
+        
         Output: str (next state)
         """
         msg = "Hello, welcome to the Cambridge restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?"
@@ -195,9 +174,10 @@ class ConversationStates:
         
         return self.system.check_next_stage()
     
-    def ask_area(self):
+    def ask_area(self):  # State 2
         """
-        Input: None
+        Ask user for area preference.
+        
         Output: str (next state)
         """
         messages = [
@@ -206,9 +186,10 @@ class ConversationStates:
         ]
         return self._handle_preference_question(messages, 'ASK_AREA')
     
-    def ask_price(self):
+    def ask_price(self):  # State 3
         """
-        Input: None
+        Ask user for price range preference.
+        
         Output: str (next state)
         """
         messages = [
@@ -217,9 +198,10 @@ class ConversationStates:
         ]
         return self._handle_preference_question(messages, 'ASK_PRICE')
     
-    def ask_food_type(self):
+    def ask_food_type(self):  # State 4
         """
-        Input: None
+        Ask user for food type preference.
+        
         Output: str (next state)
         """
         messages = [
@@ -230,6 +212,8 @@ class ConversationStates:
     
     def _handle_preference_question(self, messages, context):
         """
+        Generic handler for preference collection questions.
+        
         Input: messages (list of str), context (str)
         Output: str (next state)
         """
@@ -252,9 +236,10 @@ class ConversationStates:
         
         return self.system.check_next_stage()
     
-    def ask_additional_requirements(self):
+    def ask_additional_requirements(self):  # State 5
         """
-        Input: None
+        Ask user for additional requirements like romantic or touristic.
+        
         Output: str (next state)
         """
         if not self.system.alternatives and not self.system.current_restaurant:
@@ -300,6 +285,8 @@ class ConversationStates:
     
     def _has_requirement_keywords(self, user_input):
         """
+        Check if user input contains requirement-related keywords.
+        
         Input: user_input (str)
         Output: bool
         """
@@ -308,7 +295,8 @@ class ConversationStates:
     
     def _prompt_for_additional_requirements(self):
         """
-        Input: None
+        Prompt user to clarify additional requirements.
+        
         Output: str (next state)
         """
         clarify_msg = "I didn't understand. Please let me know if you have any specific requirements like romantic atmosphere, child-friendly environment, etc., or say 'no' if you don't have additional preferences."
@@ -317,7 +305,8 @@ class ConversationStates:
     
     def _handle_affirmative_additional_requirements(self):
         """
-        Input: None
+        Handle when user says yes to additional requirements.
+        
         Output: str (next state)
         """
         clarify = "What specific requirements do you have in mind? For example, romantic, touristic, child-friendly?"
@@ -342,9 +331,10 @@ class ConversationStates:
         
         return self._prompt_for_additional_requirements()
     
-    def confirm(self):
+    def confirm(self):  # State 7
         """
-        Input: None
+        Confirm user preferences before restaurant search.
+        
         Output: str (next state)
         """
         confirmation_msg = self._build_confirmation_message()
@@ -379,7 +369,8 @@ class ConversationStates:
     
     def _build_confirmation_message(self):
         """
-        Input: None
+        Build confirmation message summarizing user preferences.
+        
         Output: str (confirmation message)
         """
         prefs = []
@@ -403,7 +394,8 @@ class ConversationStates:
     
     def _build_additional_preferences_text(self):
         """
-        Input: None
+        Build text description of additional preferences.
+        
         Output: list of str
         """
         additional_prefs = []
@@ -422,9 +414,10 @@ class ConversationStates:
         
         return additional_prefs
     
-    def suggest_restaurant(self):
+    def suggest_restaurant(self):  # State 8
         """
-        Input: None
+        Suggest a restaurant to the user and handle conflicts.
+        
         Output: str (next state)
         """
         if not self.system.current_restaurant:
@@ -474,7 +467,8 @@ class ConversationStates:
     
     def _should_apply_inference_filtering(self):
         """
-        Input: None
+        Check if inference filtering should be applied.
+        
         Output: bool
         """
         has_additional_reqs = any(v is not None for v in self.system.additional_requirements.values())
@@ -483,6 +477,8 @@ class ConversationStates:
     
     def _get_active_conflict(self, restaurant):
         """
+        Determine if restaurant has an active conflict that needs resolution.
+        
         Input: restaurant (dict)
         Output: str or None ('romantic', 'touristic', or None)
         """
@@ -491,18 +487,26 @@ class ConversationStates:
             if self.system.additional_requirements.get(conflict_type) is not None:
                 return conflict_type
         
-        for conflict_type in ['romantic', 'touristic']:
-            if self.system.additional_requirements.get(conflict_type) is None:
-                continue
-            
-            conflicts = getattr(self.system, f'{conflict_type}_conflicts', [])
-            if any(c['restaurantname'] == restaurant['restaurantname'] for c in conflicts):
-                return conflict_type
+        restaurant_name = restaurant['restaurantname']
+        
+        # Check for romantic conflicts
+        if self.system.additional_requirements.get('romantic') is not None:
+            for conflict_restaurant in self.system.romantic_conflicts:
+                if conflict_restaurant['restaurantname'] == restaurant_name:
+                    return 'romantic'
+        
+        # Check for touristic conflicts
+        if self.system.additional_requirements.get('touristic') is not None:
+            for conflict_restaurant in self.system.touristic_conflicts:
+                if conflict_restaurant['restaurantname'] == restaurant_name:
+                    return 'touristic'
         
         return None
     
     def _handle_conflict(self, restaurant, conflict_type):
         """
+        Handle conflict resolution dialog with user.
+        
         Input: restaurant (dict), conflict_type (str)
         Output: str ('recommend', 'reject', 'skip', 'restart', or 'exit')
         """
@@ -519,22 +523,19 @@ class ConversationStates:
         
         if action == 'recommend':
             self.system.current_restaurant = data
-            return 'recommend'
         elif action == 'reject':
             print(f"System: {self.system.format_output(data)}")
-            return 'reject'
-        elif action == 'restart':
-            return 'restart'
         elif action == 'exit':
             print(f"System: {self.system.format_output('Thank you for using the restaurant system. Goodbye!')}")
-            return 'exit'
-        else:
+        elif action == 'skip':
             print(f"System: {self.system.format_output('I understand you want to skip this restaurant. Let me find another option for you.')}")
-            return 'skip'
+        
+        return action
     
     def _try_next_restaurant(self):
         """
-        Input: None
+        Try to find and suggest the next alternative restaurant.
+        
         Output: str (next state)
         """
         next_restaurant = self._get_next_alternative()
@@ -548,7 +549,8 @@ class ConversationStates:
     
     def _get_next_alternative(self):
         """
-        Input: None
+        Get the next alternative restaurant from available options.
+        
         Output: dict or None (next restaurant)
         """
         if hasattr(self.system, '_handling_conflict_restaurant'):
@@ -561,27 +563,31 @@ class ConversationStates:
     
     def _get_next_conflict_restaurant(self):
         """
-        Input: None
+        Get next restaurant from conflict lists.
+        
         Output: dict or None
         """
         conflict_type = self.system._handling_conflict_restaurant
-        conflicts = getattr(self.system, f'{conflict_type}_conflicts', [])
         
-        if conflicts:
-            return conflicts.pop(0)
+        if conflict_type == 'romantic' and self.system.romantic_conflicts:
+            return self.system.romantic_conflicts.pop(0)
+        elif conflict_type == 'touristic' and self.system.touristic_conflicts:
+            return self.system.touristic_conflicts.pop(0)
         
-        other_type = 'touristic' if conflict_type == 'romantic' else 'romantic'
-        other_conflicts = getattr(self.system, f'{other_type}_conflicts', [])
-        
-        if other_conflicts:
-            self.system._handling_conflict_restaurant = other_type
-            return other_conflicts.pop(0)
+        # Try the other conflict type
+        if conflict_type == 'romantic' and self.system.touristic_conflicts:
+            self.system._handling_conflict_restaurant = 'touristic'
+            return self.system.touristic_conflicts.pop(0)
+        elif conflict_type == 'touristic' and self.system.romantic_conflicts:
+            self.system._handling_conflict_restaurant = 'romantic'
+            return self.system.romantic_conflicts.pop(0)
         
         return None
     
     def _get_next_regular_alternative(self):
         """
-        Input: None
+        Get next restaurant from regular alternatives list.
+        
         Output: dict or None
         """
         alt_restaurant_dict = self.system.alternatives[self.system.suggestion_index]
@@ -594,69 +600,59 @@ class ConversationStates:
     
     def _get_first_conflict_restaurant(self):
         """
-        Input: None
+        Get first available restaurant from any conflict list.
+        
         Output: dict or None
         """
-        for conflict_type in ['romantic', 'touristic']:
-            conflicts = getattr(self.system, f'{conflict_type}_conflicts', [])
-            if conflicts:
-                self.system._handling_conflict_restaurant = conflict_type
-                return conflicts.pop(0)
+        if self.system.romantic_conflicts:
+            self.system._handling_conflict_restaurant = 'romantic'
+            return self.system.romantic_conflicts.pop(0)
+        
+        if self.system.touristic_conflicts:
+            self.system._handling_conflict_restaurant = 'touristic'
+            return self.system.touristic_conflicts.pop(0)
         
         return None
     
     def parse_additional_requirements(self, user_input):
         """
+        Extract additional requirements from user input.
+        
         Input: user_input (str)
         Output: dict (extracted requirements)
         """
         requirements = {}
         
-        touristic_patterns = {
-            True: ['tourist', 'touristic', 'popular', 'famous'],
-            False: ['not tourist', 'local', 'hidden', 'authentic']
-        }
+        # Check for touristic preferences
+        if any(word in user_input for word in ['tourist', 'touristic', 'popular', 'famous']):
+            requirements['touristic'] = True
+        elif any(word in user_input for word in ['not tourist', 'local', 'hidden', 'authentic']):
+            requirements['touristic'] = False
         
-        romantic_patterns = {
-            True: ['romantic', 'romance', 'intimate', 'cozy', 'date'],
-            False: ['not romantic', 'casual', 'business']
-        }
+        # Check for romantic preferences
+        if any(word in user_input for word in ['romantic', 'romance', 'intimate', 'cozy', 'date']):
+            requirements['romantic'] = True
+        elif any(word in user_input for word in ['not romantic', 'casual', 'business']):
+            requirements['romantic'] = False
         
-        children_patterns = {
-            True: ['child', 'children', 'kid', 'family', 'child-friendly'],
-            False: ['no child', 'adults only', 'quiet']
-        }
+        # Check for children preferences
+        if any(word in user_input for word in ['child', 'children', 'kid', 'family', 'child-friendly']):
+            requirements['children'] = True
+        elif any(word in user_input for word in ['no child', 'adults only', 'quiet']):
+            requirements['children'] = False
         
-        seats_patterns = {
-            True: ['assigned seat', 'assigned seats', 'seat assignment', 'waiter choose'],
-            False: ['choose seat', 'pick seat', 'free seating']
-        }
-        
-        for value, patterns in touristic_patterns.items():
-            if any(word in user_input for word in patterns):
-                requirements['touristic'] = value
-                break
-        
-        for value, patterns in romantic_patterns.items():
-            if any(word in user_input for word in patterns):
-                requirements['romantic'] = value
-                break
-        
-        for value, patterns in children_patterns.items():
-            if any(word in user_input for word in patterns):
-                requirements['children'] = value
-                break
-        
-        for value, patterns in seats_patterns.items():
-            if any(word in user_input for word in patterns):
-                requirements['assigned_seats'] = value
-                break
+        # Check for seating preferences
+        if any(word in user_input for word in ['assigned seat', 'assigned seats', 'seat assignment', 'waiter choose']):
+            requirements['assigned_seats'] = True
+        elif any(word in user_input for word in ['choose seat', 'pick seat', 'free seating']):
+            requirements['assigned_seats'] = False
         
         return requirements
     
-    def apologize(self):
+    def apologize(self):  # State 6
         """
-        Input: None
+        Apologize for no matching restaurants and restart search.
+        
         Output: str (next state)
         """
         sorry_msg = "I'm sorry, no restaurants were found matching your criteria. Let's try a new search with different preferences."
@@ -665,9 +661,10 @@ class ConversationStates:
         InputValidator.reset_system_state(self.system)
         return self.system.states['ASK_AREA']
     
-    def inform(self):
+    def inform(self):  # State 9
         """
-        Input: None
+        Handle user requests for restaurant information or alternatives.
+        
         Output: str (next state)
         """
         self._print_inform_prompt()
@@ -689,10 +686,7 @@ class ConversationStates:
             return self._handle_no_restaurant_requests(user_intent, user_input)
     
     def _print_inform_prompt(self):
-        """
-        Input: None
-        Output: None
-        """
+        """Display appropriate prompt based on current restaurant status."""
         if self.system.current_restaurant:
             info_msg = "Would you like more information about the restaurant (phone, address), an alternative restaurant, or would you like to try a different search?"
             print(f"System: {self.system.format_output(info_msg)}")
@@ -716,6 +710,8 @@ class ConversationStates:
     
     def _handle_current_restaurant_requests(self, user_input, user_intent):
         """
+        Handle user requests when a current restaurant is available.
+        
         Input: user_input (str), user_intent (str)
         Output: str (next state)
         """
@@ -741,6 +737,8 @@ class ConversationStates:
     
     def _has_info_keywords(self, utterance):
         """
+        Check if utterance contains information request keywords.
+        
         Input: utterance (str)
         Output: bool
         """
@@ -749,6 +747,8 @@ class ConversationStates:
     
     def _has_alternative_keywords(self, utterance):
         """
+        Check if utterance contains alternative request keywords.
+        
         Input: utterance (str)
         Output: bool
         """
@@ -757,6 +757,8 @@ class ConversationStates:
     
     def _handle_no_restaurant_requests(self, user_intent, user_input):
         """
+        Handle user requests when no current restaurant is available.
+        
         Input: user_intent (str), user_input (str)
         Output: str (next state)
         """
@@ -767,21 +769,21 @@ class ConversationStates:
             return self.system.states['GOODBYE']
         
         prefs = PreferenceExtractor.extract_all(user_input.lower())
-        if any(prefs.get(key) not in [None, 'dontcare'] for key in ['area', 'price', 'food']):
-            for key, value in prefs.items():
-                if value and value != 'dontcare':
-                    self.system.user_requirements[key] = value
+        has_new_prefs = False
+        for key, value in prefs.items():
+            if value and value != 'dontcare':
+                self.system.user_requirements[key] = value
+                has_new_prefs = True
+        
+        if has_new_prefs:
             return self.system.check_next_stage()
         
         clarify_msg = "I didn't understand. Please let me know if you'd like restaurant information, alternatives, or want to search for different restaurants."
         print(f"System: {self.system.format_output(clarify_msg)}")
         return self.system.states['INFORM']
     
-    def goodbye(self):
-        """
-        Input: None
-        Output: None
-        """
+    def goodbye(self):  # State 10
+        """End conversation with farewell message."""
         bye_msg = "Thank you for using the Cambridge restaurant system. Goodbye!"
         print(f"System: {self.system.format_output(bye_msg)}")
         self.system.conversation_ended = True

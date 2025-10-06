@@ -3,12 +3,11 @@ from state_transition import RestaurantSystem
 
 def main():
     """
-    The function performs the following operations:
-    1. System initialization and welcome display
-    2. User configuration (classifier, restart policy, output format)
-    3. Model loading/training
-    4. Conversation execution with error handling
-    5. Resource cleanup
+    Main entry point for the Cambridge Restaurant Recommendation System.
+    Handles system configuration, initialization, and conversation execution.
+    
+    Input: None
+    Output: None - Runs interactive dialog system until user exits
     """ 
     print("\n" + "="*60)
     print("CAMBRIDGE RESTAURANT RECOMMENDATION SYSTEM")
@@ -20,7 +19,7 @@ def main():
     print("SYSTEM CONFIGURATION")
     print("-"*40)
     
-    # Configure classifier type based on user preference 
+    # Configure classifier type
     print("\nChoose Classifier Type:")
     print("  1 - Machine Learning (MLP) - Most accurate")
     print("  2 - Majority Baseline - Simple baseline")  
@@ -28,48 +27,47 @@ def main():
     
     choice = input("\nEnter your choice (1/2/3) [default: 1]: ").strip()
     
-    if choice == "2":
-        system.classifier_type = "majority"
-        print("  Using Majority Baseline classifier")
-    elif choice == "3":
-        system.classifier_type = "rules"
-        print("  Using Rules Baseline classifier")
+    classifier_options = {
+        "2": ("majority", "Majority Baseline"),
+        "3": ("rules", "Rules Baseline")
+    }
+    
+    if choice in classifier_options:
+        classifier_type, classifier_name = classifier_options[choice]
+        system.classifier_type = classifier_type
+        print(f"  Using {classifier_name} classifier")
     else:
         system.classifier_type = "mlp"
         print("  Using Machine Learning (MLP) classifier")
     
-    # Configure conversation flow policy 
+    # Configure restart policy
     print("\nDialog Restart Policy:")
     print("  1 - Allow restarts - Users can start over anytime")
     print("  2 - No restarts - Linear conversation flow only")
     
     restart_choice = input("\nEnter your choice (1/2) [default: 1]: ").strip()
     
-    if restart_choice == "2":
-        system.allow_restarts = False
-        print("  Restarts disabled - Linear flow enabled")
-    else:
-        system.allow_restarts = True
+    system.allow_restarts = restart_choice != "2"
+    if system.allow_restarts:
         print("  Restarts enabled - Flexible conversation")
+    else:
+        print("  Restarts disabled - Linear flow enabled")
     
-    # Configure output formatting for accessibility/preference needs
+    # Configure output format
     print("\nOutput Format:")
     print("  1 - Normal case - Standard capitalization")
     print("  2 - ALL CAPS - All system output in uppercase")
     
     caps_choice = input("\nEnter your choice (1/2) [default: 1]: ").strip()
     
-    if caps_choice == "2":
-        system.output_caps = True
+    system.output_caps = caps_choice == "2"
+    if system.output_caps:
         print("  ALL CAPS OUTPUT ENABLED")
     else:
-        system.output_caps = False
         print("  Normal case output enabled")
     
-    # Initialize machine learning model or load pre-trained weights 
     system.ensure_model_ready()
     
-    # Display system readiness and user navigation options
     print("\n" + "-"*40)
     print("System Ready!")
     print("-"*40)
@@ -87,7 +85,7 @@ def main():
     try:
         system.run_conversation()
     except KeyboardInterrupt:
-        # Handle shutdown on user interrupt (Ctrl+C)
+        # Handle Ctrl+C shutdown
         print("\n\nThank you for using the Cambridge Restaurant System!")
         print("Have a great day!\n")
     except Exception as e: 

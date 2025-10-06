@@ -420,6 +420,12 @@ MAIR-Assignment/
 
 ## Technical Details
 
+### Code Organization
+The codebase follows clean, human-readable patterns with:
+- **Consistent documentation**: Input/Output format docstrings throughout
+- **State numbering**: Numbered conversation states (1-10) for clear flow tracking
+- **Minimal comments**: Focused, descriptive comments where needed
+
 ### Dialog States
 The system uses a finite state machine with these states:
 
