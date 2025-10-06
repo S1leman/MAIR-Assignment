@@ -68,10 +68,23 @@ ls data/restaurant_info.csv data/dialog_acts.dat data/restaurant_info_updated.cs
 
 ## Quick Start
 
+### Option 1: Run Main Dialog System
 ```bash
+cd /path/to/MAIR-Assignment
 python src/dialog_system.py
 ```
-Follow the prompts to configure the system, then start chatting!
+
+### Option 2: Try Inference Engine Demo
+```bash
+python src/inference_engine.py
+```
+
+### Option 3: Evaluate All Classifiers
+```bash
+python src/classification_system.py
+```
+
+**Important**: All commands should be run from the project root directory.
 
 ---
 
@@ -93,6 +106,9 @@ python src/inference_engine.py
 
 **Sample Output:**
 ```
+CAMBRIDGE RESTAURANT INFERENCE ENGINE
+Demonstrating rule-based reasoning and conflict detection
+
 1. NO CONFLICT EXAMPLE:
 Restaurant: Da Vinci Pizzeria (cheap + good + italian)
 Inferred properties: {'touristic': True}
@@ -116,15 +132,41 @@ Rule 6: spending a long time in a restaurant is romantic → romantic=True
 5. `busy → romantic = False` 
 6. `long stays → romantic = True` ⚡ *conflicts with Rule 5*
 
+### First-Time Setup
+
+**1. Navigate to project directory:**
+```bash
+cd MAIR-Assignment
+```
+
+**2. Start the main dialog system:**
+```bash
+python src/dialog_system.py
+```
+
+**3. Configure the system when prompted:**
+- Choose classifier (recommend MLP for best accuracy)
+- Set restart policy (allow/disallow restarts)
+- Choose output format (normal/ALL CAPS)
+
+**4. Start conversing:**
+```
+System: Hello, welcome to the Cambridge restaurant system? You can ask for 
+        restaurants by area, price range or food type. How may I help you?
+User: I want italian food in the north
+```
+
+---
+
+## Usage
+
 ### Main Dialog System
 
 Start the interactive dialog system:
 
 ```bash
 python src/dialog_system.py 
-```
-
-**Configuration options during startup:**
+```**Configuration options during startup:**
 
 **1. Classifier Selection:**
 - `1` - MLP (Multi-Layer Perceptron) - Recommended (~97% accuracy)
@@ -341,6 +383,26 @@ System: I recommend 'Bella Italia', it is cheap italian restaurant in
 ```
 
 ---
+```
+
+### Example 7: Negative Preferences
+
+```
+System: Do you have any additional requirements? For example, would you like the restaurant to be touristic, romantic, child-friendly, or have assigned seats? You can say 'yes' and specify requirements, or 'no' if you don't have any additional preferences.
+User: not romantic
+
+[Classified as: negate]
+
+System: You are looking for a restaurant in any price range that is not romantic, right?
+System: Please answer yes to confirm or no to change your preferences.
+User: yes
+
+[Classified as: affirm]
+
+System: I recommend 'saint johns chop house', it is moderate british restaurant in the west of town. The restaurant is not romantic because it tends to be busy and noisy.
+```
+---
+
 
 ## Configuration
 
@@ -357,12 +419,18 @@ System: I recommend 'Bella Italia', it is cheap italian restaurant in
 
 #### Additional Requirements
 
-| Requirement | Keywords |
-|-------------|----------|
-| Romantic | romantic, intimate, cozy, date |
-| Touristic | touristic, tourist, popular, famous |
-| Child-friendly | children, kids, family, child-friendly |
-| Assigned seats | assigned seats, waiter chooses |
+| Requirement | Positive Keywords | Negative Keywords |
+|-------------|------------------|-------------------|
+| Romantic | romantic, intimate, cozy, date | not romantic, casual, business |
+| Touristic | touristic, tourist, popular, famous | not touristic, local, hidden, authentic |
+| Child-friendly | children, kids, family, child-friendly | no children, adults only, quiet |
+| Assigned seats | assigned seats, waiter chooses | no assigned seats, free seating, choose seat |
+
+**Examples:**
+- "I want something romantic" → `{'romantic': True}`
+- "not romantic please" → `{'romantic': False}`
+- "something not touristic" → `{'touristic': False}`
+- "no assigned seats" → `{'assigned_seats': False}`
 
 ### Inference Rules
 The system uses 6 inference rules:
@@ -478,11 +546,11 @@ pip install --upgrade -r requirements.txt
 
 ### Missing data files
 
-**Solution:** Verify both data files exist:
+**Solution:** Verify all data files exist:
 
 ```bash
 ls -la data/
-# Should show: restaurant_info.csv and dialog_acts.dat restaurant_info_updated.csv
+# Should show: restaurant_info.csv dialog_acts.dat restaurant_info_updated.csv
 ```
 
 ### Conversation stuck in loop
