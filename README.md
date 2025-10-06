@@ -489,7 +489,7 @@ MAIR-Assignment/
 ## Technical Details
 
 ### Code Organization
-The codebase follows clean, human-readable patterns with:
+The codebase follows clean patterns with:
 - **Consistent documentation**: Input/Output format docstrings throughout
 - **State numbering**: Numbered conversation states (1-10) for clear flow tracking
 - **Minimal comments**: Focused, descriptive comments where needed
