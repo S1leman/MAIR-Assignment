@@ -259,27 +259,32 @@ class ConversationStates:
         should_continue, next_state = InputValidator.validate_and_handle_special_commands(user_input, self.system)
         if not should_continue:
             return next_state
-        
+
         if user_intent in ['bye', 'thankyou']:
             return self.system.states['GOODBYE']
-        
-        if user_intent in ['negate', 'deny'] or user_input.lower() in ['no', 'nope', 'none']:
-            return self.system.states['CONFIRM']
-        
+
+        # FIRST: Try to parse additional requirements from the input
+        # This must come BEFORE checking for general negation
         additional_reqs = self.parse_additional_requirements(user_input.lower())
         
         if additional_reqs:
             self.system.additional_requirements.update(additional_reqs)
             return self.system.states['CONFIRM']
-        
+
+        # THEN: Check for general negation (only if no specific requirements found)
+        if user_intent in ['negate', 'deny'] or user_input.lower() in ['no', 'nope', 'none']:
+            return self.system.states['CONFIRM']
+
         if user_intent in ['affirm'] or user_input.lower() in ['yes', 'yeah', 'yep']:
             return self._handle_affirmative_additional_requirements()
-        
+
         if self._has_requirement_keywords(user_input.lower()):
-            additional_reqs = self.parse_additional_requirements(user_input.lower())
-            if additional_reqs:
-                self.system.additional_requirements.update(additional_reqs)
-                return self.system.states['CONFIRM']
+            # We already parsed above, but double-check
+            if not additional_reqs:
+                additional_reqs = self.parse_additional_requirements(user_input.lower())
+                if additional_reqs:
+                    self.system.additional_requirements.update(additional_reqs)
+                    return self.system.states['CONFIRM']
         
         return self._prompt_for_additional_requirements()
     
@@ -290,8 +295,15 @@ class ConversationStates:
         Input: user_input (str)
         Output: bool
         """
-        keywords = ['romantic', 'touristic', 'child', 'family', 'seat']
-        return any(word in user_input for word in keywords)
+        # Positive keywords
+        positive_keywords = ['romantic', 'touristic', 'tourist', 'child', 'family', 'seat', 'seating', 'assigned', 'intimate', 'cozy']
+        # Negative patterns
+        negative_patterns = ['not romantic', 'not touristic', 'not tourist', 'non-romantic', 'non-touristic', 'no child', 'no assigned', 'no seat']
+        
+        found_positive = any(word in user_input for word in positive_keywords)
+        found_negative = any(pattern in user_input for pattern in negative_patterns)
+        
+        return found_positive or found_negative
     
     def _prompt_for_additional_requirements(self):
         """
@@ -518,19 +530,47 @@ class ConversationStates:
         user_requirement = self.system.additional_requirements[conflict_type]
         action, data = ConflictResolver.resolve(user_input, restaurant, conflict_type, user_requirement, self.system.allow_restarts)
         
-        if hasattr(self.system, '_handling_conflict_restaurant'):
-            delattr(self.system, '_handling_conflict_restaurant')
-        
         if action == 'recommend':
             self.system.current_restaurant = data
         elif action == 'reject':
             print(f"System: {self.system.format_output(data)}")
+            self._remove_restaurant_from_lists(restaurant['restaurantname'])
         elif action == 'exit':
             print(f"System: {self.system.format_output('Thank you for using the restaurant system. Goodbye!')}")
         elif action == 'skip':
             print(f"System: {self.system.format_output('I understand you want to skip this restaurant. Let me find another option for you.')}")
+            self._remove_restaurant_from_lists(restaurant['restaurantname'])
+        
+        # Clear conflict handling flag after processing
+        if hasattr(self.system, '_handling_conflict_restaurant'):
+            delattr(self.system, '_handling_conflict_restaurant')
         
         return action
+    
+    def _remove_restaurant_from_lists(self, restaurant_name):
+        """
+        Remove restaurant from all alternative and conflict lists to prevent re-suggestion.
+        
+        Input: restaurant_name (str)
+        """
+        # Remove from regular alternatives
+        self.system.alternatives = [
+            alt for alt in self.system.alternatives 
+            if (isinstance(alt, dict) and alt.get('restaurantname', '').lower() != restaurant_name.lower()) or
+               (isinstance(alt, str) and alt.lower() != restaurant_name.lower())
+        ]
+        
+        # Remove from romantic conflicts
+        self.system.romantic_conflicts = [
+            conflict for conflict in self.system.romantic_conflicts
+            if conflict.get('restaurantname', '').lower() != restaurant_name.lower()
+        ]
+        
+        # Remove from touristic conflicts
+        self.system.touristic_conflicts = [
+            conflict for conflict in self.system.touristic_conflicts
+            if conflict.get('restaurantname', '').lower() != restaurant_name.lower()
+        ]
     
     def _try_next_restaurant(self):
         """
@@ -623,29 +663,41 @@ class ConversationStates:
         """
         requirements = {}
         
-        # Check for touristic preferences
-        if any(word in user_input for word in ['tourist', 'touristic', 'popular', 'famous']):
-            requirements['touristic'] = True
-        elif any(word in user_input for word in ['not tourist', 'local', 'hidden', 'authentic']):
+        # Check for touristic preferences (negative first to avoid conflicts)
+        negative_touristic = ['not tourist', 'not touristic', 'non-tourist', 'non-touristic', 'not a tourist']
+        positive_touristic = ['tourist', 'touristic', 'popular', 'famous']
+        
+        if any(phrase in user_input for phrase in negative_touristic) or any(word in user_input for word in ['local', 'hidden', 'authentic']):
             requirements['touristic'] = False
+        elif any(word in user_input for word in positive_touristic):
+            requirements['touristic'] = True
         
-        # Check for romantic preferences
-        if any(word in user_input for word in ['romantic', 'romance', 'intimate', 'cozy', 'date']):
-            requirements['romantic'] = True
-        elif any(word in user_input for word in ['not romantic', 'casual', 'business']):
+        # Check for romantic preferences (negative first to avoid conflicts)
+        negative_romantic = ['not romantic', 'non-romantic', 'not a romantic']
+        positive_romantic = ['romantic', 'romance', 'intimate', 'cozy', 'date']
+        
+        if any(phrase in user_input for phrase in negative_romantic) or any(word in user_input for word in ['casual', 'business']):
             requirements['romantic'] = False
+        elif any(word in user_input for word in positive_romantic):
+            requirements['romantic'] = True
         
-        # Check for children preferences
-        if any(word in user_input for word in ['child', 'children', 'kid', 'family', 'child-friendly']):
-            requirements['children'] = True
-        elif any(word in user_input for word in ['no child', 'adults only', 'quiet']):
+        # Check for children preferences (negative first to avoid conflicts)
+        negative_children = ['no child', 'no children', 'no kids', 'adults only', 'not child-friendly']
+        positive_children = ['child', 'children', 'kid', 'kids', 'family', 'child-friendly']
+        
+        if any(phrase in user_input for phrase in negative_children) or 'quiet' in user_input:
             requirements['children'] = False
+        elif any(word in user_input for word in positive_children):
+            requirements['children'] = True
         
-        # Check for seating preferences
-        if any(word in user_input for word in ['assigned seat', 'assigned seats', 'seat assignment', 'waiter choose']):
-            requirements['assigned_seats'] = True
-        elif any(word in user_input for word in ['choose seat', 'pick seat', 'free seating']):
+        # Check for seating preferences (negative first to avoid conflicts)
+        negative_seating = ['no assigned seat', 'no assigned seats', 'no seat assignment', 'free seating', 'choose seat', 'pick seat']
+        positive_seating = ['assigned seat', 'assigned seats', 'seat assignment', 'waiter choose']
+        
+        if any(phrase in user_input for phrase in negative_seating):
             requirements['assigned_seats'] = False
+        elif any(phrase in user_input for phrase in positive_seating):
+            requirements['assigned_seats'] = True
         
         return requirements
     

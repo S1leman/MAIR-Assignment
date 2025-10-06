@@ -430,9 +430,16 @@ The codebase follows clean, human-readable patterns with:
 The system uses a finite state machine with these states:
 
 ```
-WELCOME → ASK_AREA → ASK_PRICE → ASK_FOOD_TYPE → 
-ASK_ADDITIONAL_REQUIREMENTS → CONFIRM → SUGGEST_RESTAURANT → 
-INFORM ⇄ [loop back or continue] → GOODBYE
+1. WELCOME
+2. ASK_AREA
+3. ASK_PRICE
+4. ASK_FOOD_TYPE 
+5. ASK_ADDITIONAL_REQUIREMENTS
+6. APOLOGISE
+7. CONFIRM
+8. SUGGEST_RESTAURANT
+9. INFORM
+10. GOODBYE
 ```
 
 ### Preference Extraction
