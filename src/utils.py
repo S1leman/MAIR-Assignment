@@ -1,10 +1,3 @@
-"""
-Utility Functions for Restaurant Recommendation System
-
-Input: Various data types for formatting, validation, and processing
-Output: Formatted strings, boolean checks, and data transformations
-"""
-
 from sklearn.model_selection import train_test_split
 import os
 import pickle
@@ -15,6 +8,8 @@ import pandas as pd
 
 def build_restaurant_info(csv_in="data/restaurant_info.csv", csv_out="data/restaurant_info_updated.csv"):
     """
+    Adds random properties to restaurant data for inference testing.
+    
     Input: csv_in (str), csv_out (str)
     Output: str (output filename)
     """
@@ -31,6 +26,8 @@ def build_restaurant_info(csv_in="data/restaurant_info.csv", csv_out="data/resta
 
 def format_restaurant_info_response(restaurant, user_input):
     """
+    Creates natural language response with restaurant details based on user request.
+    
     Input: restaurant (dict), user_input (str)
     Output: str (formatted response)
     """
@@ -48,8 +45,14 @@ def format_restaurant_info_response(restaurant, user_input):
         'price': ['price', 'cost', 'expensive', 'cheap', 'price range']
     }
     
-    requests = {req_type: any(pattern in utterance_lower for pattern in patterns)
-                for req_type, patterns in request_patterns.items()}
+    requests = {}
+    for req_type, patterns in request_patterns.items():
+        found = False
+        for pattern in patterns:
+            if pattern in utterance_lower:
+                found = True
+                break
+        requests[req_type] = found
     
     if any(requests.values()):
         return _build_specific_info_response(restaurant, requests)
@@ -194,6 +197,8 @@ def _format_response_parts(parts):
 
 def format_restaurant_suggestion(restaurant, user_requirements=None):
     """
+    Creates a restaurant recommendation with inference explanations.
+    
     Input: restaurant (dict), user_requirements (dict or None)
     Output: str (formatted suggestion)
     """
@@ -231,8 +236,12 @@ def format_restaurant_suggestion(restaurant, user_requirements=None):
     if not inference_parts:
         return main_desc + "."
     
-    formatted_parts = [part[0].upper() + part[1:] if part and not part[0].isupper() else part
-                      for part in inference_parts]
+    formatted_parts = []
+    for part in inference_parts:
+        if part and not part[0].isupper():
+            formatted_parts.append(part[0].upper() + part[1:])
+        else:
+            formatted_parts.append(part)
     
     if len(formatted_parts) == 1:
         return f"{main_desc}. {formatted_parts[0]}."
@@ -299,6 +308,8 @@ def _filter_explanations_by_requirements(full_explanation, inferred_properties, 
 
 def detect_restart_command(user_input):
     """
+    Checks if user wants to restart the conversation.
+    
     Input: user_input (str)
     Output: bool
     """
@@ -309,6 +320,8 @@ def detect_restart_command(user_input):
 
 def detect_exit_command(user_input):
     """
+    Checks if user wants to exit the system.
+    
     Input: user_input (str)
     Output: bool
     """
@@ -319,6 +332,8 @@ def detect_exit_command(user_input):
 
 def detect_new_search_request(user_input):
     """
+    Detects if user is starting a new restaurant search.
+    
     Input: user_input (str)
     Output: bool
     """
@@ -329,6 +344,8 @@ def detect_new_search_request(user_input):
 
 def get_state_name_from_value(states_dict, state_value):
     """
+    Finds state name by its value in the states dictionary.
+    
     Input: states_dict (dict), state_value (str)
     Output: str or None
     """
@@ -340,6 +357,8 @@ def get_state_name_from_value(states_dict, state_value):
 
 def update_preferences_with_context(user_requirements, validated_prefs, context_stage):
     """
+    Updates user preferences based on current conversation context.
+    
     Input: user_requirements (dict), validated_prefs (dict), context_stage (str or None)
     Output: None (modifies user_requirements in place)
     """
@@ -365,6 +384,8 @@ def update_preferences_with_context(user_requirements, validated_prefs, context_
 
 def log_preference_changes(validated_prefs, user_requirements, old_prefs, errors):
     """
+    Prints debug information about preference extraction and updates.
+    
     Input: validated_prefs (dict), user_requirements (dict), old_prefs (dict), errors (list)
     Output: None (prints to console)
     """
@@ -380,6 +401,8 @@ def log_preference_changes(validated_prefs, user_requirements, old_prefs, errors
 
 def execute_conversation_state(system, current_state, states):
     """
+    Routes to appropriate conversation state handler function.
+    
     Input: system (RestaurantSystem), current_state (str), states (dict)
     Output: str (next state)
     """
@@ -405,6 +428,8 @@ def execute_conversation_state(system, current_state, states):
 
 def read_data(path, deduplicate=False):
     """
+    Loads dialog acts and utterances from file with optional deduplication.
+    
     Input: path (str), deduplicate (bool)
     Output: tuple (dialogue_act: list, utterance: list)
     """
@@ -435,6 +460,8 @@ def read_data(path, deduplicate=False):
 
 def split_and_save_dataset(dialogue_act, utterance, train_path, test_path, test_size=0.15, random_state=42):
     """
+    Splits data into train/test sets and saves to files.
+    
     Input: dialogue_act (list), utterance (list), train_path (str), test_path (str), test_size (float), random_state (int)
     Output: tuple (train_acts, test_acts, train_utterances, test_utterances)
     """
@@ -455,6 +482,8 @@ def split_and_save_dataset(dialogue_act, utterance, train_path, test_path, test_
 
 def load_data():
     """
+    Loads and splits both original and deduplicated datasets.
+    
     Input: None
     Output: dict with keys 'orig' and 'dedup', each containing tuple (train_acts, test_acts, train_utts, test_utts)
     """
@@ -478,6 +507,8 @@ def load_data():
 
 def load_trained_model(system_instance):
     """
+    Loads pre-trained MLP model from disk if available.
+    
     Input: system_instance (RestaurantSystem)
     Output: bool (True if loaded successfully)
     """
@@ -508,6 +539,8 @@ def load_trained_model(system_instance):
 
 def save_trained_model(system_instance):
     """
+    Saves trained MLP model components to disk.
+    
     Input: system_instance (RestaurantSystem)
     Output: bool (True on success)
     """
@@ -533,6 +566,8 @@ def save_trained_model(system_instance):
 
 def train_classifier(system_instance):
     """
+    Trains a new MLP classifier and saves it to disk.
+    
     Input: system_instance (RestaurantSystem)
     Output: bool (True on success)
     """

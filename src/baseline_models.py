@@ -16,7 +16,6 @@ def rules_baseline_model(test_utterances):
     Output: list of predicted dialog acts based on keyword rules
     """
 
-    # Keyword-to-label mapping rules
     rules = {
             'affirm': ['yes', 'correct', 'right', 'yeah', 'ye'],
             'thankyou': ['thank you', 'thanks'],
@@ -44,7 +43,7 @@ def rules_baseline_model(test_utterances):
 
         for label, keywords_list in rules.items():
             for keyword in keywords_list:
-                # Handle phrases vs single words differently
+                # Handle phrases and single words
                 if " " in keyword:  
                     if keyword in u:
                         prediction = label

@@ -55,7 +55,7 @@ def logistic_regression_classifier(train_acts, test_acts, train_utterances, test
     X_train = vectorizer.fit_transform(train_utterances)
     X_test = vectorizer.transform(test_utterances) 
 
-    clf = LogisticRegression(random_state=42)
+    clf = LogisticRegression(random_state=42, class_weight="balanced")
     clf.fit(X_train, train_acts)
     y_pred = clf.predict(X_test)
     
@@ -79,7 +79,6 @@ def mlp_classifier(train_acts, test_acts, train_utterances, test_utterances, ret
     y_train = le.fit_transform(train_acts)
     y_test = le.transform(test_acts)
     
-    # Handle class imbalance with sample weights
     sample_weights = compute_sample_weight('balanced', y_train)
 
     clf = MLPClassifier(hidden_layer_sizes=(256, 128), activation="relu", max_iter=300, random_state=42)

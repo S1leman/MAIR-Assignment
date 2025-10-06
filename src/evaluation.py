@@ -28,10 +28,14 @@ def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_nam
     Input: y_true, y_pred (lists), model_name, dataset_name (strings)
     """
     print(f"\n-- Misclassification Summary for {model_name} on {dataset_name} --")
-    errors = defaultdict(Counter)
+    errors = {}
 
     for actual, pred in zip(y_true, y_pred):
         if actual != pred:
+            if actual not in errors:
+                errors[actual] = {}
+            if pred not in errors[actual]:
+                errors[actual][pred] = 0
             errors[actual][pred] += 1
 
     if not errors:
@@ -39,8 +43,13 @@ def summarize_misclassifications(y_true, y_pred, model_name="Model", dataset_nam
         return
 
     for actual_act, preds in errors.items():
-        details = ", ".join([f"{count}× as {pred_act}" for pred_act, count in preds.items()])
-        print(f"For dialogue act '{actual_act}' it was misclassified {sum(preds.values())} times: {details}")
+        details_list = []
+        total_count = 0
+        for pred_act, count in preds.items():
+            details_list.append(f"{count}× as {pred_act}")
+            total_count += count
+        details = ", ".join(details_list)
+        print(f"For dialogue act '{actual_act}' it was misclassified {total_count} times: {details}")
 
 def plot_confusion_matrix(y_true, y_pred, labels, model_name):
     """
@@ -76,7 +85,6 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     
     Input: y_true, y_pred (lists), model_name (string)
     """
-    # Fixed order of dialog acts for consistent evaluation
     VALID_ACTS = [
         "ack", "affirm", "bye", "confirm", "deny", "hello", "inform", "negate",
         "null", "repeat", "reqalts", "reqmore", "request", "restart", "thankyou"
@@ -102,7 +110,7 @@ def print_detailed_metrics(y_true, y_pred, model_name):
     for i, label in enumerate(labels):
         print(f"{label:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<8}")
    
-    #Macro averages
+    # Macro averages
     macro_precision = np.mean(precision)
     macro_recall = np.mean(recall)
     macro_f1 = np.mean(f1)
@@ -140,7 +148,11 @@ def print_model_comparison(results):
     for model_name, (y_true, y_pred) in results.items():
         accuracy = accuracy_score(y_true, y_pred)
         
-        labels = sorted(list(set(y_true)))        
+        labels = []
+        for label in y_true:
+            if label not in labels:
+                labels.append(label)
+        labels.sort()        
         precision, recall, f1, support = precision_recall_fscore_support(
             y_true, y_pred, labels=labels, average=None, zero_division=0
         )
@@ -211,7 +223,11 @@ def full_evaluation(results, data=None):
                     print(f"  Actual:    {actual}\n")
                     error_count += 1
                     if error_count >= 3:
-                        total_errors = sum(1 for a, p in zip(y_true, y_pred) if a != p)
+                        # Count remaining errors
+                        total_errors = 0
+                        for a, p in zip(y_true, y_pred):
+                            if a != p:
+                                total_errors += 1
                         if total_errors > 3:
                             print(f"... and {total_errors - 3} more misclassifications")
                         break

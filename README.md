@@ -1,5 +1,11 @@
 # Cambridge Restaurant Recommendation System
 
+## Team F6
+
+- **Zoi Dimitriou** (8666334)
+- **Sileman Patang** (2389697)  
+- **Athanasia Boumpouraki** (8289964)
+
 ---
 
 ## Table of Contents
@@ -128,6 +134,8 @@ Predicted: thankyou
 Enter utterance: what's the phone number
 Predicted: request
 ```
+
+**Note:** During evaluation, confusion matrix plots will appear in popup windows. You must close these windows for the program to continue to the next step.
 
 **Navigation:**
 - Type `back` to change model/dataset

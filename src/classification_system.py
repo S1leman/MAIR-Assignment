@@ -24,7 +24,7 @@ def train_all_models(data):
     rules_pred_orig = rules_baseline_model(test_utts_orig)
     print(f"Majority class: {majority_label}")
 
-    #Train ML models on original data 
+    #Train models on original data 
     dt_model_orig, dt_vectorizer_orig = decision_tree_classifier(
         train_acts_orig, test_acts_orig, train_utts_orig, test_utts_orig, return_model=True)
     lr_model_orig, lr_vectorizer_orig = logistic_regression_classifier(
@@ -42,7 +42,7 @@ def train_all_models(data):
     mlp_pred_orig = mlp_le_orig.inverse_transform(mlp_pred_orig_int)
     gb_pred_orig = gb_model_orig.predict(gb_vectorizer_orig.transform(test_utts_orig))
 
-    #Train ML models on deduplicated data 
+    #Train models on deduplicated data 
     dt_model_dedup, dt_vectorizer_dedup = decision_tree_classifier(
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
     lr_model_dedup, lr_vectorizer_dedup = logistic_regression_classifier(
@@ -51,6 +51,7 @@ def train_all_models(data):
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
     gb_model_dedup, gb_vectorizer_dedup = gradient_boosting_classifier(
         train_acts_dedup, test_acts_dedup, train_utts_dedup, test_utts_dedup, return_model=True)
+    
     #Predictions for deduplicated test set
     dt_pred_dedup = dt_model_dedup.predict(dt_vectorizer_dedup.transform(test_utts_dedup))
     lr_pred_dedup = lr_model_dedup.predict(lr_vectorizer_dedup.transform(test_utts_dedup))
@@ -59,7 +60,6 @@ def train_all_models(data):
     mlp_pred_dedup = mlp_le_dedup.inverse_transform(mlp_pred_dedup_int)
     gb_pred_dedup = gb_model_dedup.predict(gb_vectorizer_dedup.transform(test_utts_dedup))
     
-    #Collect all ground truth + predictions for evaluation
     results = {
         "Majority Baseline (Original)": (test_acts_orig, maj_pred_orig),
         "Rules Baseline (Original)": (test_acts_orig, rules_pred_orig),
@@ -93,7 +93,6 @@ def choose_dataset_and_model():
     
     Output: (suffix, choice) tuple - dataset type and classifier choice, or (None, None) to exit
     """
-    #Dataset selection menu
     while True:
         print("\nChoose dataset for prediction:")
         print("1. Original")
@@ -107,7 +106,6 @@ def choose_dataset_and_model():
             continue
         suffix = "orig" if dataset_choice == "1" else "dedup"
 
-       #Classifier selection menu
         while True:
             if suffix == "orig":
                 print(f"\nAvailable classifiers for Original data:")
@@ -154,7 +152,6 @@ def interactive_classification(models):
             break
         suffix, choice = result
 
-        #Map menu choices to model names for display
         if suffix == "orig":
             model_names = {
                 "1": "Majority", "2": "Rules", "3": "Decision Tree",
@@ -165,11 +162,10 @@ def interactive_classification(models):
                 "1": "Decision Tree", "2": "Logistic Regression", "3": "MLP", "4": "Gradient Boosting"
             }
 
-        print(f"\nUsing: {model_names[choice]}")
-        print("Enter utterances (type 'back' to change model/dataset):")
+        print(f"\nUsing: {model_names[choice]}") 
 
         while True:
-            utterance = input("\nEnter utterance: ").strip()
+            utterance = input("\nEnter utterances (type 'back' to change model/dataset): ").strip()
             if utterance.lower() == 'back':
                 break
             if utterance.lower() in ['quit', 'exit']:
