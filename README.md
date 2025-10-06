@@ -110,10 +110,10 @@ Rule 6: spending a long time in a restaurant is romantic → romantic=True
 
 **Rules Explained:**
 1. `(cheap AND good food) → touristic = True`
-2. `romanian cuisine → touristic = False` 
+2. `romanian cuisine → touristic = False`  ⚡ *conflicts with Rule 1*
 3. `busy → assigned_seats = True`
 4. `long stays → children = False`
-5. `busy → romantic = False` ⚡ *conflicts with Rule 6*
+5. `busy → romantic = False` 
 6. `long stays → romantic = True` ⚡ *conflicts with Rule 5*
 
 ### Main Dialog System
@@ -164,13 +164,13 @@ python src/classification_system.py
 After evaluation, test any classifier with custom utterances:
 
 ```
-Enter utterance: I want a cheap restaurant
+Enter utterances (type 'back' to change model/dataset): I want a cheap restaurant
 Predicted: inform
 
-Enter utterance: thank you
+Enter utterances (type 'back' to change model/dataset): thank you
 Predicted: thankyou
 
-Enter utterance: what's the phone number
+Enter utterances (type 'back' to change model/dataset): what's the phone number
 Predicted: request
 ```
 
