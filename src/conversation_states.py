@@ -456,7 +456,6 @@ class ConversationStates:
             elif resolution_action == 'restart':
                 # Handle restart during conflict resolution only if restarts are enabled
                 if self.system.allow_restarts:
-                    from utils import detect_restart_command
                     self.system.parse_user_input('restart')
                     return self.system.states['WELCOME']
                 else:
