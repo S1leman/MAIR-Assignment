@@ -383,9 +383,6 @@ System: I recommend 'Bella Italia', it is cheap italian restaurant in
         the north of town.
 ```
 
----
-```
-
 ### Example 7: Negative Preferences
 
 ```
@@ -402,6 +399,7 @@ User: yes
 
 System: I recommend 'saint johns chop house', it is moderate british restaurant in the west of town. The restaurant is not romantic because it tends to be busy and noisy.
 ```
+
 ---
 
 
