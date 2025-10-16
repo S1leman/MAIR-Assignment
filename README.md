@@ -144,10 +144,18 @@ cd MAIR-Assignment
 python src/dialog_system.py
 ```
 
+
 **3. Configure the system when prompted:**
-- Choose classifier (recommend MLP for best accuracy)
-- Set restart policy (allow/disallow restarts)
-- Choose output format (normal/ALL CAPS)
+                        - Select color mode: colored (modern) or plain (classic)
+                        - Classifier is set to MLP by default (no user selection)
+        - Set restart policy (allow/disallow restarts)
+        - Choose output format (normal/ALL CAPS)
+
+**Alternatively:**
+If you run with the `-default` flag, all configuration is skipped and the following defaults are used:
+        - Plain text (no colors)
+        - Normal capitalization
+        - Restarts allowed
 
 **4. Start conversing:**
 ```

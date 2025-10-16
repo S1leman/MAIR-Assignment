@@ -35,6 +35,7 @@ michaelhouse cafe,expensive,centre,european,01223 309147,st. michael's church tr
 efes restaurant,moderate,centre,swiss,01223 500005,king street city centre,c.b 1,good,busy,short
 chiquito restaurant bar,expensive,south,european,01223 400170,2g cambridge leisure park cherry hinton road cherry hinton,c.b 1,good,busy,long
 caffe uno,expensive,centre,italian,01223 448620,32 bridge street city centre,,bad,busy,short
+caffe duo,moderate,centre,italian,01223 448620,32 bridge street city centre,,bad,busy,short
 j restaurant,cheap,centre,fusion,01223 307581,86 regent street city centre,c.b 2,good,not busy,short
 la margherita,cheap,south,italian,01223 315232,15 magdalene street city centre,c.b 3,bad,not busy,short
 cocum,expensive,east,gastropub,01223 366668,71 castle street city centre,c.b 3,bad,not busy,short
@@ -60,6 +61,8 @@ taj tandoori,expensive,south,portuguese,01223 412299,64 cherry hinton road cherr
 tandoori palace,moderate,north,indian,01223 506055,68 histon road chesterton,c.b 4,bad,not busy,short
 yippee noodle bar,moderate,centre,asian oriental,01223 518111,40428 king street city centre,c.b 1,bad,not busy,long
 travellers rest,expensive,west,british,01223 276182,huntingdon road city centre,,bad,busy,short
+travellers sick,cheap,west,british,01223 276182,huntingdon road city centre,,bad,busy,short
+travellers pol,moderate,west,british,01223 276182,huntingdon road city centre,,bad,busy,short
 maharajah tandoori restaurant,expensive,east,indian,01223 358399,41518 castle street city centre,c.b 3,bad,busy,long
 shanghai family restaurant,moderate,east,chinese,01223 301761,39 burleigh street city centre,,bad,not busy,long
 curry prince,expensive,east,indian,01223 566388,451 newmarket road fen ditton,c.b 5,bad,not busy,long

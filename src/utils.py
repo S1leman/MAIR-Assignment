@@ -382,23 +382,6 @@ def update_preferences_with_context(user_requirements, validated_prefs, context_
                 user_requirements[pref_type] = value
 
 
-def log_preference_changes(validated_prefs, user_requirements, old_prefs, errors):
-    """
-    Prints debug information about preference extraction and updates.
-    
-    Input: validated_prefs (dict), user_requirements (dict), old_prefs (dict), errors (list)
-    Output: None (prints to console)
-    """
-    if errors:
-        print(f"[Validation warnings: {', '.join(errors)}]")
-    
-    if validated_prefs:
-        print(f"[Extracted: {validated_prefs}]")
-    
-    if user_requirements != old_prefs:
-        print(f"[Preferences updated: {user_requirements}]")
-
-
 def execute_conversation_state(system, current_state, states):
     """
     Routes to appropriate conversation state handler function.
@@ -530,7 +513,6 @@ def load_trained_model(system_instance):
             system_instance.mlp_label_encoder = pickle.load(f)
                     
         system_instance.is_trained = True
-        print("Pre-trained MLP model loaded successfully from disk")
         return True
     else:
         print("No pre-trained model found. Will need to train new model.")

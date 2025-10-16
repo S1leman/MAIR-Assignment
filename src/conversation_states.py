@@ -153,12 +153,15 @@ class ConversationStates:
         
         Output: str (next state)
         """
-        msg = "Hello, welcome to the Cambridge restaurant system? You can ask for restaurants by area, price range or food type. How may I help you?"
-        print(f"System: {self.system.format_output(msg)}")
+        msg = (
+            "Hello, welcome to the Cambridge restaurant system?\n"
+            "You can ask for restaurants by area, price range or food type.\n"
+            "How may I help you?"
+        )
+        print(self.system.format_output(msg))
         
         user_input = self.system.get_user_input("User: ")
         user_intent = self.system.classify_utterance(user_input)
-        print(f"\n[Classified as: {user_intent}]")
         
         should_continue, next_state = InputValidator.validate_and_handle_special_commands(user_input, self.system)
         if not should_continue:
@@ -180,11 +183,11 @@ class ConversationStates:
         
         Output: str (next state)
         """
-        messages = [
-            'What part of town do you have in mind?',
+        message = (
+            'What part of town do you have in mind?\n'
             'Please specify: north, south, east, west, or centre (you can also say any area or do not care).'
-        ]
-        return self._handle_preference_question(messages, 'ASK_AREA')
+        )
+        return self._handle_preference_question([message], 'ASK_AREA')
     
     def ask_price(self):  # State 3
         """
@@ -192,11 +195,11 @@ class ConversationStates:
         
         Output: str (next state)
         """
-        messages = [
-            "Would you like something in the cheap, moderate, or expensive price range?",
+        message = (
+            "Would you like something in the cheap, moderate, or expensive price range?\n"
             "Please specify: cheap, moderate, expensive (you can also say 'any price' or 'don't care')."
-        ]
-        return self._handle_preference_question(messages, 'ASK_PRICE')
+        )
+        return self._handle_preference_question([message], 'ASK_PRICE')
     
     def ask_food_type(self):  # State 4
         """
@@ -204,11 +207,11 @@ class ConversationStates:
         
         Output: str (next state)
         """
-        messages = [
-            "What kind of food would you like?",
+        message = (
+            "What kind of food would you like?\n"
             "Please specify a cuisine type (e.g., italian, chinese, indian, british, french, etc.) or say 'any food' if you don't mind."
-        ]
-        return self._handle_preference_question(messages, 'ASK_FOOD_TYPE')
+        )
+        return self._handle_preference_question([message], 'ASK_FOOD_TYPE')
     
     def _handle_preference_question(self, messages, context):
         """
@@ -218,11 +221,10 @@ class ConversationStates:
         Output: str (next state)
         """
         for msg in messages:
-            print(f"System: {self.system.format_output(msg)}")
+            print(self.system.format_output(msg))
         
         user_input = self.system.get_user_input("User: ")
         user_intent = self.system.classify_utterance(user_input)
-        print(f"\n[Classified as: {user_intent}]")
         
         should_continue, next_state = InputValidator.validate_and_handle_special_commands(user_input, self.system)
         if not should_continue:
@@ -245,8 +247,12 @@ class ConversationStates:
         if not self.system.alternatives and not self.system.current_restaurant:
             self.system.search_restaurants()
         
-        add_req_msg = "Do you have any additional requirements? For example, would you like the restaurant to be touristic, romantic, child-friendly, or have assigned seats? You can say 'yes' and specify requirements, or 'no' if you don't have any additional preferences."
-        print(f"System: {self.system.format_output(add_req_msg)}")
+        add_req_msg = (
+                "Do you have any additional requirements?\n"
+                "For example, would you like the restaurant to be touristic, romantic, child-friendly, or have assigned seats?\n"
+                "You can say 'yes' and specify requirements, or 'no' if you don't have any additional preferences."
+            )
+        print(self.system.format_output(add_req_msg))
         
         user_input = self.system.get_user_input("User: ")
         
@@ -254,7 +260,6 @@ class ConversationStates:
             return self._prompt_for_additional_requirements()
         
         user_intent = self.system.classify_utterance(user_input)
-        print(f"\n[Classified as: {user_intent}]")
         
         should_continue, next_state = InputValidator.validate_and_handle_special_commands(user_input, self.system)
         if not should_continue:
@@ -312,7 +317,7 @@ class ConversationStates:
         Output: str (next state)
         """
         clarify_msg = "I didn't understand. Please let me know if you have any specific requirements like romantic atmosphere, child-friendly environment, etc., or say 'no' if you don't have additional preferences."
-        print(f"System: {self.system.format_output(clarify_msg)}")
+        print(self.system.format_output(clarify_msg))
         return self.system.states['ASK_ADDITIONAL_REQUIREMENTS']
     
     def _handle_affirmative_additional_requirements(self):
@@ -322,7 +327,7 @@ class ConversationStates:
         Output: str (next state)
         """
         clarify = "What specific requirements do you have in mind? For example, romantic, touristic, child-friendly?"
-        print(f"System: {self.system.format_output(clarify)}")
+        print(self.system.format_output(clarify))
         
         follow_up_input = self.system.get_user_input("User: ")
         
@@ -350,12 +355,10 @@ class ConversationStates:
         Output: str (next state)
         """
         confirmation_msg = self._build_confirmation_message()
-        print(f"System: {self.system.format_output(confirmation_msg)}")
-        print(f"System: {self.system.format_output('Please answer yes to confirm or no to change your preferences.')}")
+        print(self.system.format_output(confirmation_msg))
         
         user_input = self.system.get_user_input("User: ")
         user_intent = self.system.classify_utterance(user_input)
-        print(f"\n[Classified as: {user_intent}]")
         
         should_continue, next_state = InputValidator.validate_and_handle_special_commands(user_input, self.system)
         if not should_continue:
@@ -373,7 +376,7 @@ class ConversationStates:
         
         elif user_intent == 'negate':
             change_msg = "No problem! Let me help you find a different restaurant."
-            print(f"System: {self.system.format_output(change_msg)}")
+            print(self.system.format_output(change_msg))
             InputValidator.reset_system_state(self.system)
             return self.system.states['ASK_AREA']
         
@@ -400,7 +403,10 @@ class ConversationStates:
         additional_prefs = self._build_additional_preferences_text()
         
         if additional_prefs:
-            return f"You are looking for a restaurant {' '.join(prefs)} {' and '.join(additional_prefs)}, right?"
+            return (
+                f"You are looking for a restaurant {' '.join(prefs)}\n"
+                f"{' and '.join(additional_prefs)}, right?"
+            )
         else:
             return f"You are looking for a restaurant {' '.join(prefs)}, right?"
     
@@ -434,7 +440,7 @@ class ConversationStates:
         """
         if not self.system.current_restaurant:
             no_rest_msg = "I'm sorry but there is no restaurant serving that type of food"
-            print(f"System: {self.system.format_output(no_rest_msg)}")
+            print(self.system.format_output(no_rest_msg))
             return self.system.states['APOLOGIZE']
         
         if self._should_apply_inference_filtering():
@@ -460,7 +466,7 @@ class ConversationStates:
                     return self.system.states['WELCOME']
                 else:
                     # If restarts are disabled, treat as unrecognized input and continue with conflict resolution
-                    print(f"System: {self.system.format_output('I did not understand. Please choose one of the options provided.')}")
+                    print(self.system.format_output('I did not understand. Please choose one of the options provided.'))
                     return self._try_next_restaurant()
             elif resolution_action in ['skip', 'reject']:
                 return self._try_next_restaurant()
@@ -472,8 +478,9 @@ class ConversationStates:
             restaurant['inference_result'] = inference_result
         
         suggestion_msg = format_restaurant_suggestion(restaurant, self.system.additional_requirements)
-        print(f"System: {self.system.format_output(suggestion_msg)}")
-        
+        import time
+        print(self.system.format_output(suggestion_msg))
+        time.sleep(1.2)  # Small delay after recommendation
         return self.system.states['INFORM']
     
     def _should_apply_inference_filtering(self):
@@ -523,7 +530,7 @@ class ConversationStates:
         """
         messages = ConflictResolver.present_conflict(restaurant['restaurantname'], conflict_type)
         for msg in messages:
-            print(f"System: {self.system.format_output(msg)}")
+            print(self.system.format_output(msg))
         
         user_input = self.system.get_user_input("User: ")
         user_requirement = self.system.additional_requirements[conflict_type]
@@ -532,12 +539,12 @@ class ConversationStates:
         if action == 'recommend':
             self.system.current_restaurant = data
         elif action == 'reject':
-            print(f"System: {self.system.format_output(data)}")
+            print(self.system.format_output(data))
             self._remove_restaurant_from_lists(restaurant['restaurantname'])
         elif action == 'exit':
-            print(f"System: {self.system.format_output('Thank you for using the restaurant system. Goodbye!')}")
+            print(self.system.format_output('Thank you for using the restaurant system. Goodbye!'))
         elif action == 'skip':
-            print(f"System: {self.system.format_output('I understand you want to skip this restaurant. Let me find another option for you.')}")
+            print(self.system.format_output('I understand you want to skip this restaurant. Let me find another option for you.'))
             self._remove_restaurant_from_lists(restaurant['restaurantname'])
         
         # Clear conflict handling flag after processing
@@ -706,9 +713,13 @@ class ConversationStates:
         
         Output: str (next state)
         """
-        sorry_msg = "I'm sorry, no restaurants were found matching your criteria. Let's try a new search with different preferences."
-        print(f"System: {self.system.format_output(sorry_msg)}")
-        
+        sorry_msg = (
+            "I'm sorry, no restaurants were found matching your criteria.\n"
+            "Let's try a new search with different preferences."
+        )
+        import time
+        print(self.system.format_output(sorry_msg))
+        time.sleep(1.2)  # Small delay before next print
         InputValidator.reset_system_state(self.system)
         return self.system.states['ASK_AREA']
     
@@ -722,7 +733,6 @@ class ConversationStates:
         
         user_input = self.system.get_user_input("User: ")
         user_intent = self.system.classify_utterance(user_input)
-        print(f"\n[Classified as: {user_intent}]")
         
         should_continue, next_state = InputValidator.validate_and_handle_special_commands(user_input, self.system)
         if not should_continue:
@@ -739,25 +749,29 @@ class ConversationStates:
     def _print_inform_prompt(self):
         """Display appropriate prompt based on current restaurant status."""
         if self.system.current_restaurant:
-            info_msg = "Would you like more information about the restaurant (phone, address), an alternative restaurant, or would you like to try a different search?"
-            print(f"System: {self.system.format_output(info_msg)}")
-            
-            guidance_msg = "You can ask for 'phone', 'address', say 'alternative' for other options, specify new preferences, or say 'exit' to leave"
+            info_msg = (
+                "Would you like more information about the restaurant (phone, address), an alternative restaurant, or would you like to try a different search?"
+            )
+
+            guidance_msg = info_msg + (
+                "\nYou can ask for 'phone', 'address', say 'alternative' for other options,\n"
+                "specify new preferences, or say 'exit' to leave"
+            )
             if self.system.allow_restarts:
                 guidance_msg += " or 'restart' to start over."
             else:
                 guidance_msg += "."
-            print(f"System: {self.system.format_output(guidance_msg)}")
+            print(self.system.format_output(guidance_msg))
         else:
             try_diff_msg = "Would you like to try a different type of food or change your preferences?"
-            print(f"System: {self.system.format_output(try_diff_msg)}")
+            print(self.system.format_output(try_diff_msg))
             
             restart_msg = "You can say 'yes' to try again, specify new preferences (e.g., 'chinese food'), or say 'exit' to leave"
             if self.system.allow_restarts:
                 restart_msg += " or 'restart' to start over."
             else:
                 restart_msg += "."
-            print(f"System: {self.system.format_output(restart_msg)}")
+            print(self.system.format_output(restart_msg))
     
     def _handle_current_restaurant_requests(self, user_input, user_intent):
         """
@@ -830,12 +844,15 @@ class ConversationStates:
             return self.system.check_next_stage()
         
         clarify_msg = "I didn't understand. Please let me know if you'd like restaurant information, alternatives, or want to search for different restaurants."
-        print(f"System: {self.system.format_output(clarify_msg)}")
+        print(self.system.format_output(clarify_msg))
         return self.system.states['INFORM']
     
     def goodbye(self):  # State 10
         """End conversation with farewell message."""
-        bye_msg = "Thank you for using the Cambridge restaurant system. Goodbye!"
-        print(f"System: {self.system.format_output(bye_msg)}")
+        bye_msg = (
+            "Thank you for using the Cambridge restaurant system.\n"
+            "Goodbye!"
+        )
+        print(self.system.format_output(bye_msg))
         self.system.conversation_ended = True
         return None

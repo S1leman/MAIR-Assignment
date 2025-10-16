@@ -1,11 +1,13 @@
 from lookup import RestaurantLookup
 from utils import (format_restaurant_info_response, 
-                   detect_restart_command, get_state_name_from_value, update_preferences_with_context, log_preference_changes,
+                   detect_restart_command, get_state_name_from_value, update_preferences_with_context,
                    execute_conversation_state, train_classifier, load_trained_model)
 from preference_extraction import PreferenceExtractor
 from conversation_states import ConversationStates
-from baseline_models import (rules_baseline_model,majority_baseline_model)
+from baseline_models import (rules_baseline_model, majority_baseline_model)
 from inference_engine import InferenceEngine
+from utils_colors import create_color_formatter
+
 
 class RestaurantSystem:
     def __init__(self):
@@ -14,6 +16,9 @@ class RestaurantSystem:
         self.restaurant_lookup = RestaurantLookup("data/restaurant_info_updated.csv")
         
         self.inference_engine = InferenceEngine()
+        
+        # Initialize with no colors by default - will be set in main()
+        self.color_formatter = create_color_formatter(False)
          
         self.states = {
             'WELCOME': 'welcome',  #State 1             
@@ -85,10 +90,12 @@ class RestaurantSystem:
         Format system output based on user preferences.
         
         Input: message (str) - Raw system message
-        Output: str - Formatted message (uppercase if caps enabled)
+        Output: str - Formatted message (with colors and/or caps)
         """
+        # Apply caps if enabled
         formatted_message = message.upper() if self.output_caps else message
-        return formatted_message
+        # Apply color formatting
+        return self.color_formatter.system_message(formatted_message, caps=self.output_caps)
     
     def ensure_model_ready(self):
         """
@@ -103,17 +110,21 @@ class RestaurantSystem:
         if load_trained_model(self):
             return True
             
-        print("No pre-trained model available. Training new model...")
+        if self.color_formatter.use_colors:
+            print(self.color_formatter.info_message("No pre-trained model available. Training new model...", caps=self.output_caps))
+        else:
+            print("No pre-trained model available. Training new model...")
         return train_classifier(self)
     
     def get_user_input(self, prompt: str = "User: ") -> str:
         """
-        Get user input from terminal.
+        Get user input from terminal with colored prompt.
         
         Input: prompt (str) - Input prompt to display
         Output: str - User's text input
         """
-        return input(prompt)
+        colored_prompt = self.color_formatter.user_prompt(prompt)
+        return input(colored_prompt)
            
     def classify_utterance(self, user_utterance):
         """
@@ -172,7 +183,6 @@ class RestaurantSystem:
         
         extracted_prefs = PreferenceExtractor.extract_all(user_input, context=context_stage)
         update_preferences_with_context(self.user_requirements, extracted_prefs, context_stage)
-        log_preference_changes(extracted_prefs, self.user_requirements, old_prefs, [])
 
     def check_next_stage(self):
         """
@@ -244,8 +254,6 @@ class RestaurantSystem:
         if not active_requirements:
             return
         
-        print(f"[Applying inference rules with requirements: {active_requirements}]")
-        
         all_candidates = []
         if self.current_restaurant:
             all_candidates.append(self.current_restaurant)
@@ -312,15 +320,15 @@ class RestaurantSystem:
         """
         if not self.current_restaurant:
             no_info_msg = "I'm sorry, I don't have any restaurant information available to provide details."
-            print(f"System: {self.format_output(no_info_msg)}")
+            print(self.format_output(no_info_msg))
             return self.states['APOLOGIZE']
         
         try:
             response = format_restaurant_info_response(self.current_restaurant, user_input)
-            print(f"System: {self.format_output(response)}")
+            print(self.format_output(response))
         except Exception as e:
             error_msg = f"I'm sorry, I'm having trouble accessing the restaurant information right now."
-            print(f"System: {self.format_output(error_msg)}")
+            print(self.format_output(error_msg))
             return self.states['APOLOGIZE']
         
         return 'await_next_request'
@@ -415,49 +423,54 @@ class RestaurantSystem:
             try:
                 self._handle_conversation_turn()
             except KeyboardInterrupt:
-                print("\nConversation interrupted by user.")
+                if self.color_formatter.use_colors:
+                    print(self.color_formatter.info_message("\nConversation interrupted by user.", caps=self.output_caps))
+                else:
+                    print("\nConversation interrupted by user.")
                 break
             except Exception as e:
-                print(f"Error: {e}")
+                if self.color_formatter.use_colors:
+                    print(self.color_formatter.error_message(f"Error: {e}", caps=self.output_caps))
+                else:
+                    print(f"Error: {e}")
                 break
         
         self._print_conversation_footer()
     
-    def _print_conversation_header(self):
+    def _print_conversation_header(self, term_width=100):
         """
         Print conversation header banner.
-        
-        Input: None
-        Output: None - Prints header to console
         """
-        print("=" * 60)
-        print("CAMBRIDGE RESTAURANT SYSTEM DIALOG")
-        print("=" * 60)
+        if self.color_formatter.use_colors:
+            print(self.color_formatter.header("CAMBRIDGE RESTAURANT SYSTEM DIALOG", width=term_width, caps=self.output_caps))
+        else:
+            print("=" * term_width)
+            print("CAMBRIDGE RESTAURANT SYSTEM DIALOG".center(term_width))
+            print("=" * term_width)
     
-    def _print_conversation_footer(self):
+    def _print_conversation_footer(self, term_width=100):
         """
         Print conversation completion footer.
-        
-        Input: None
-        Output: None - Prints footer to console
         """
-        print("=" * 60)
-        print(f"CONVERSATION COMPLETED - Total turns: {self.conversation_turn}")
-        print("=" * 60)
+        if self.color_formatter.use_colors:
+            print(self.color_formatter.header(f"CONVERSATION COMPLETED - Total turns: {self.conversation_turn}", width=term_width, caps=self.output_caps))
+            print(self.color_formatter.separator(term_width))
+        else:
+            print("=" * term_width)
+            print(f"CONVERSATION COMPLETED - Total turns: {self.conversation_turn}".center(term_width))
+            print("=" * term_width)
     
-    def _handle_conversation_turn(self):
+    def _handle_conversation_turn(self, term_width=100):
         """
         Handle a single conversation turn.
-        
-        Input: None
-        Output: None - Processes current state and transitions to next
         """
         self.conversation_turn += 1
         current_state_name = get_state_name_from_value(self.states, self.current_state)
-        
-        print(f"\n--- Turn {self.conversation_turn} ---")
-        
+
         self.current_state = execute_conversation_state(self, self.current_state, self.states)
-        
+
         if self.current_state and not self.conversation_ended:
-            print("-" * 30)
+            if self.color_formatter.use_colors:
+                print(self.color_formatter.separator(term_width))
+            else:
+                print("-" * term_width)
